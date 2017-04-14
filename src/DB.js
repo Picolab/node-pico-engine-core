@@ -346,6 +346,48 @@ module.exports = function(opts){
             }, function(err){
                 callback(err, rids);
             });
+        },
+        unregisterRuleset: function(rid, callback){
+            var error = false;
+            dbRange(ldb, {
+                prefix: ["pico"],
+                values: false
+            }, function(key){
+                if(key.length === 4 && key[2] === "ruleset" && key[3] === rid){
+                    error = true;
+                }
+            }, function(err){
+                if(error) return callback(new Error("Ruleset still installed"));
+                if(err) return callback(err);
+                ldb.del(["rulesets", "enabled", rid], function(err){});
+                var to_batch = [];
+                var prefixes = [
+                    ["rulesets", "krl"],
+                    ["rulesets", "url"],
+                    ["resultset", rid, "vars"],
+                    ["rulesets", "versions", rid]
+                ];
+                function dbRangeNext(){
+                    if(prefixes.length > 0){
+                        var prefix = prefixes.pop();
+                        dbRange(ldb, {
+                            prefix: prefix,
+                        }, function(data){
+                            if(prefix.length === 2){
+                                if(prefix[1] === "krl" && data.value["rid"] !== rid) return;
+                                if(prefix[1] === "url" && data.key[3] !== rid) return;
+                            }
+                            to_batch.push({type: "del", key: data.key});
+                        }, function(err){
+                            if(err) return callback(err);
+                            dbRangeNext();
+                        });
+                    } else {
+                        ldb.batch(to_batch, callback);
+                    }
+                }
+                dbRangeNext();
+            });
         }
     };
 };

@@ -20,10 +20,10 @@ var omitMeta = function(resp){
 };
 
 var mkSignalTask = function(pe, eci){
-    return function(domain, type, attrs, timestamp){
+    return function(domain, type, attrs, timestamp, eid){
         return λ.curry(pe.signalEvent, {
             eci: eci,
-            eid: "1234",
+            eid: eid || "1234",
             domain: domain,
             type: type,
             attrs: attrs || {},
@@ -275,8 +275,13 @@ test("PicoEngine - io.picolabs.events ruleset", function(t){
 
             [signal("events", "raise_set_name_rid", {name: "Raised-3"}), []],
             [query("getSentAttrs"), {name: "Raised-3"}],
-            [query("getSentName"), "Raised-3"]
+            [query("getSentName"), "Raised-3"],
 
+            //////////////////////////////////////////////////////////////////////////
+            [
+                signal("events", "event_eid", {}, void 0, "some eid for this test"),
+                [{name: "event_eid", options: {eid: "some eid for this test"}}]
+            ],
         ], t.end);
     });
 });
@@ -670,27 +675,31 @@ test("PicoEngine - io.picolabs.meta ruleset", function(t){
             λ.curry(pe.db.newChannel, {pico_id: "id0", name: "one", type: "t"}),
             λ.curry(pe.db.addRuleset, {pico_id: "id0", rid: "io.picolabs.meta"}),
             [
-                signal("meta", "eci"),
-                [{name: "eci", options: {eci: "id1"}}]
-            ],
-            [
-                query("eci"),
-                "id1"
-            ],
-            [
-                signal("meta", "rulesetURI"),
-                [{name: "rulesetURI", options: {
+                signal("meta", "event"),
+                [{name: "event", options: {
+                    rid: "io.picolabs.meta",
+                    host: "https://test-host",
+                    rulesetName: "testing meta module",
+                    rulesetDescription: "\nsome description for the meta test module\n    ",
+                    rulesetAuthor: "meta author",
                     rulesetURI: "https://raw.githubusercontent.com/Picolab/node-pico-engine-core/master/test-rulesets/meta.krl",
+                    ruleName: "meta_event",
+                    eci: "id1",
                 }}]
             ],
             [
-                query("rulesetURI"),
-                "https://raw.githubusercontent.com/Picolab/node-pico-engine-core/master/test-rulesets/meta.krl",
+                query("metaQuery"),
+                {
+                    rid: "io.picolabs.meta",
+                    host: "https://test-host",
+                    rulesetName: "testing meta module",
+                    rulesetDescription: "\nsome description for the meta test module\n    ",
+                    rulesetAuthor: "meta author",
+                    rulesetURI: "https://raw.githubusercontent.com/Picolab/node-pico-engine-core/master/test-rulesets/meta.krl",
+                    ruleName: void 0,
+                    eci: "id1",
+                }
             ],
-            [
-                query("host"),
-                "https://test-host",
-            ]
         ], t.end);
     });
 });

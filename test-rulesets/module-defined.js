@@ -11,13 +11,13 @@ module.exports = {
     }
   },
   "global": function* (ctx) {
-    ctx.scope.set("privateFn", ctx.KRLClosure(ctx, function* (ctx) {
+    ctx.scope.set("privateFn", ctx.KRLClosure(function* (ctx, getArg) {
       return yield ctx.callKRLstdlib("+", yield ctx.callKRLstdlib("+", yield ctx.callKRLstdlib("+", "privateFn = name: ", ctx.scope.get("configured_name")), " memo: "), yield ctx.modules.get(ctx, "ent", "memo"));
     }));
-    ctx.scope.set("getName", ctx.KRLClosure(ctx, function* (ctx) {
+    ctx.scope.set("getName", ctx.KRLClosure(function* (ctx, getArg) {
       return ctx.scope.get("configured_name");
     }));
-    ctx.scope.set("getInfo", ctx.KRLClosure(ctx, function* (ctx) {
+    ctx.scope.set("getInfo", ctx.KRLClosure(function* (ctx, getArg) {
       return {
         "name": yield ctx.scope.get("getName")(ctx, []),
         "memo": yield ctx.modules.get(ctx, "ent", "memo"),
@@ -31,7 +31,7 @@ module.exports = {
       "select": {
         "graph": { "module_defined": { "store_memo": { "expr_0": true } } },
         "eventexprs": {
-          "expr_0": function* (ctx) {
+          "expr_0": function* (ctx, aggregateEvent) {
             var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
                   "memo",
                   new RegExp("^(.*)$", "")

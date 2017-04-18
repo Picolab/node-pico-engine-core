@@ -8,8 +8,8 @@ module.exports = {
     "shares": ["hello"]
   },
   "global": function* (ctx) {
-    ctx.scope.set("hello", ctx.KRLClosure(ctx, function* (ctx) {
-      ctx.scope.set("obj", ctx.getArg(ctx.args, "obj", 0));
+    ctx.scope.set("hello", ctx.KRLClosure(function* (ctx, getArg) {
+      ctx.scope.set("obj", getArg("obj", 0));
       ctx.scope.set("msg", yield ctx.callKRLstdlib("+", "Hello ", ctx.scope.get("obj")));
       return ctx.scope.get("msg");
     }));
@@ -20,7 +20,7 @@ module.exports = {
       "select": {
         "graph": { "echo": { "hello": { "expr_0": true } } },
         "eventexprs": {
-          "expr_0": function* (ctx) {
+          "expr_0": function* (ctx, aggregateEvent) {
             return true;
           }
         },

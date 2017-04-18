@@ -2,7 +2,7 @@ module.exports = {
   "rid": "io.picolabs.execution-order",
   "meta": { "shares": ["getOrder"] },
   "global": function* (ctx) {
-    ctx.scope.set("getOrder", ctx.KRLClosure(ctx, function* (ctx) {
+    ctx.scope.set("getOrder", ctx.KRLClosure(function* (ctx, getArg) {
       return yield ctx.modules.get(ctx, "ent", "order");
     }));
   },
@@ -12,7 +12,7 @@ module.exports = {
       "select": {
         "graph": { "execution_order": { "all": { "expr_0": true } } },
         "eventexprs": {
-          "expr_0": function* (ctx) {
+          "expr_0": function* (ctx, aggregateEvent) {
             return true;
           }
         },
@@ -49,7 +49,7 @@ module.exports = {
       "select": {
         "graph": { "execution_order": { "all": { "expr_0": true } } },
         "eventexprs": {
-          "expr_0": function* (ctx) {
+          "expr_0": function* (ctx, aggregateEvent) {
             return true;
           }
         },

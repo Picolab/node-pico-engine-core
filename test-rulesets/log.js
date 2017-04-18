@@ -6,7 +6,7 @@ module.exports = {
       "select": {
         "graph": { "log": { "levels": { "expr_0": true } } },
         "eventexprs": {
-          "expr_0": function* (ctx) {
+          "expr_0": function* (ctx, aggregateEvent) {
             return true;
           }
         },
@@ -19,7 +19,7 @@ module.exports = {
       },
       "postlude": {
         "fired": function* (ctx) {
-          ctx.log(null, "hello default");
+          ctx.log("info", "hello default");
           ctx.log("error", "hello error");
           ctx.log("warn", "hello warn");
           ctx.log("info", "hello info");

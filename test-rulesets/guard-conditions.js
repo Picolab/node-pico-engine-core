@@ -2,7 +2,7 @@ module.exports = {
   "rid": "io.picolabs.guard-conditions",
   "meta": { "shares": ["getB"] },
   "global": function* (ctx) {
-    ctx.scope.set("getB", ctx.KRLClosure(ctx, function* (ctx) {
+    ctx.scope.set("getB", ctx.KRLClosure(function* (ctx, getArg) {
       return yield ctx.modules.get(ctx, "ent", "b");
     }));
   },
@@ -12,7 +12,7 @@ module.exports = {
       "select": {
         "graph": { "foo": { "a": { "expr_0": true } } },
         "eventexprs": {
-          "expr_0": function* (ctx) {
+          "expr_0": function* (ctx, aggregateEvent) {
             var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
                   "b",
                   new RegExp("^(.*)$", "")
@@ -55,7 +55,7 @@ module.exports = {
       "select": {
         "graph": { "bar": { "a": { "expr_0": true } } },
         "eventexprs": {
-          "expr_0": function* (ctx) {
+          "expr_0": function* (ctx, aggregateEvent) {
             return true;
           }
         },
@@ -71,8 +71,8 @@ module.exports = {
           1,
           2,
           3
-        ], ctx.KRLClosure(ctx, function* (ctx) {
-          ctx.scope.set("x", ctx.getArg(ctx.args, "value", 0));
+        ], ctx.KRLClosure(function* (ctx, getArg) {
+          ctx.scope.set("x", getArg("value", 0));
           yield iter(ctx);
         }));
       },

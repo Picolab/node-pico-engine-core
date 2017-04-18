@@ -2,21 +2,15 @@ var _ = require("lodash");
 var λ = require("contra");
 var DB = require("./DB");
 var cocb = require("co-callback");
-var runKRL = require("./runKRL");
 var getArg = require("./getArg");
-var modules = require("./modules");
+var runKRL = require("./runKRL");
+var Modules = require("./modules");
 var PicoQueue = require("./PicoQueue");
 var krl_stdlib = require("krl-stdlib");
-var KRLClosure = require("./KRLClosure");
 var SymbolTable = require("symbol-table");
 var EventEmitter = require("events");
 var processEvent = require("./processEvent");
 var processQuery = require("./processQuery");
-
-var modulesSync = {
-    get: cocb.toYieldable(modules.get),
-    set: cocb.toYieldable(modules.set),
-};
 
 var log_levels = {
     "info": true,
@@ -39,17 +33,36 @@ module.exports = function(conf, callback){
     var salience_graph = {};
     var keys_module_data = {};
 
+    var core = {
+        db: db,
+        host: host,
+        rulesets: rulesets,
+        salience_graph: salience_graph,
+        registerRulesetSrc: registerRulesetSrc,
+    };
+
     var emitter = new EventEmitter();
+    var modules = Modules(core);
 
     var mkCTX = function(ctx){
-        ctx.db = db;
-        ctx.host = host;
-        ctx.getArg = getArg;
-        ctx.signalEvent = signalEvent;
-        ctx.modules = modulesSync;
-        ctx.rulesets = rulesets;
-        ctx.salience_graph = salience_graph;
-        ctx.KRLClosure = KRLClosure;
+        ctx.getMyKey = (function(rid){
+            //we do it this way so all the keys are not leaked out to other built in modules or rulesets
+            return function(id){
+                return _.get(keys_module_data, ["used_keys", rid, id]);
+            };
+        }(ctx.rid));//pass in the rid at mkCTX creation so it is not later mutated
+
+        ctx.modules = modules;
+        ctx.KRLClosure = function(fn){
+            return function(ctx2, args){
+                return fn(mkCTX(_.assign({}, ctx2, {
+                    rid: ctx.rid,//keep your original rid
+                    scope: ctx.scope.push(),
+                })), function(name, index){
+                    return getArg(args, name, index);
+                });
+            };
+        };
         ctx.emit = function(type, val, message){//for stdlib
             var info = {};
             if(ctx.rid){
@@ -86,11 +99,11 @@ module.exports = function(conf, callback){
             emitter.emit(type, info, val, message);
         };
         ctx.log = function(level, val){
-            var l = _.has(log_levels, level)
-                ? level
-                : _.head(_.keys(log_levels));
-            l = "log-" + l;//this 'log-' prefix distinguishes user declared log events from other system generated events
-            ctx.emit(l, val);
+            if(!_.has(log_levels, level)){
+                throw new Error("Unsupported log level: " + level);
+            }
+            //this 'log-' prefix distinguishes user declared log events from other system generated events
+            ctx.emit("log-" + level, val);
         };
         ctx.callKRLstdlib = function(fn_name){
             var args = _.toArray(arguments);
@@ -109,13 +122,12 @@ module.exports = function(conf, callback){
                 }
             });
         };
-        ctx.registerRulesetSrc = registerRulesetSrc;
-        ctx.getMyKey = function(id){
-            var rid = ctx.rid;
-            return _.get(keys_module_data, ["used_keys", rid, id]);
-        };
+
+        //don't allow anyone to mutate ctx on the fly
+        Object.freeze(ctx);
         return ctx;
     };
+    core.mkCTX = mkCTX;
 
     var initializeRulest = cocb.wrap(function*(rs, loadDepRS){
         rs.scope = SymbolTable();
@@ -263,8 +275,7 @@ module.exports = function(conf, callback){
         if(data.type === "event"){
             var event = data.event;
             event.timestamp = new Date(event.timestamp);//convert from JSON string to date
-            processEvent(mkCTX({
-                mkCTX: mkCTX,
+            processEvent(core, mkCTX({
                 event: event,
                 pico_id: pico_id
             }), function(err, data){
@@ -278,7 +289,7 @@ module.exports = function(conf, callback){
                 callback(void 0, data);
             });
         }else if(data.type === "query"){
-            processQuery(mkCTX({
+            processQuery(core, mkCTX({
                 query: data.query,
                 pico_id: pico_id
             }), callback);
@@ -287,7 +298,9 @@ module.exports = function(conf, callback){
         }
     });
 
-    var signalEvent = function(event, callback){
+    var signalEvent = function(event_orig, callback){
+        //ensure that event is not mutated
+        var event = _.cloneDeep(event_orig);//TODO optimize
         if(!_.isDate(event.timestamp) || !conf.allow_event_time_override){
             event.timestamp = new Date();
         }
@@ -317,15 +330,19 @@ module.exports = function(conf, callback){
         });
     };
 
-    var runQuery = function(query, callback){
-        var ctx = mkCTX({query: query});
-        var emit = ctx.emit;
+    var runQuery = function(query_orig, callback){
+        //ensure that query is not mutated
+        var query = _.cloneDeep(query_orig);//TODO optimize
+        var emit = mkCTX({query: query}).emit;
         emit("episode_start");
         emit("debug", "query received: " + query.rid + "/" + query.name);
 
         db.getPicoIDByECI(query.eci, function(err, pico_id){
             if(err) return callback(err);
-            ctx.pico_id = pico_id;
+            var emit = mkCTX({
+                query: query,
+                pico_id: pico_id,
+            }).emit;
             picoQ.enqueue(pico_id, {
                 type: "query",
                 query: query

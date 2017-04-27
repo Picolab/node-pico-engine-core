@@ -347,6 +347,19 @@ module.exports = function(opts){
                 callback(err, rids);
             });
         },
+        isRulesetUsed: function(rid, callback){
+            var is_used = false;
+            dbRange(ldb, {
+                prefix: ["pico"],
+                values: false
+            }, function(key){
+                if(key[2] === "ruleset" && key[3] === rid){
+                    is_used = true;
+                }
+            }, function(err){
+                callback(err, is_used);
+            });
+        },
         unregisterRuleset: function(rid, callback){
             var error = false;
             dbRange(ldb, {

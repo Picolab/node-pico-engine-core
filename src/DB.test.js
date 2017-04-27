@@ -184,3 +184,30 @@ test("DB - getOwnerECI", function(t){
         });
     });
 });
+
+test("DB - isRulesetUsed", function(t){
+    mkTestPicoEngine({}, function(err, pe){
+        if(err)return t.end(err);
+
+        λ.series({
+            pico0: λ.curry(pe.db.newPico, {}),
+            pico1: λ.curry(pe.db.newPico, {}),
+
+            foo0: λ.curry(pe.db.addRuleset, {pico_id: "id0", rid: "rs-foo"}),
+            foo1: λ.curry(pe.db.addRuleset, {pico_id: "id1", rid: "rs-foo"}),
+            bar0: λ.curry(pe.db.addRuleset, {pico_id: "id0", rid: "rs-bar"}),
+
+            is_foo: λ.curry(pe.db.isRulesetUsed, "rs-foo"),
+            is_bar: λ.curry(pe.db.isRulesetUsed, "rs-bar"),
+            is_baz: λ.curry(pe.db.isRulesetUsed, "rs-baz"),
+            is_qux: λ.curry(pe.db.isRulesetUsed, "rs-qux"),
+        }, function(err, data){
+            if(err) return t.end(err);
+            t.equals(data.is_foo, true);
+            t.equals(data.is_bar, true);
+            t.equals(data.is_baz, false);
+            t.equals(data.is_qux, false);
+            t.end();
+        });
+    });
+});

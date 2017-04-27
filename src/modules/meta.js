@@ -10,6 +10,10 @@ var getCoreCTXval = {
     "host": function(core, ctx){
         return core.host;
     },
+    "picoId": function(core, ctx){
+        //currently, this will be undefined durring ruleset registration
+        return ctx.pico_id;
+    },
     "rulesetName": function(core, ctx){
         return _.get(core.rulesets, [ctx.rid, "meta", "name"]);
     },
@@ -21,6 +25,12 @@ var getCoreCTXval = {
     },
     "ruleName": function(core, ctx){
         return ctx.rule_name;
+    },
+    "inEvent": function(core, ctx){
+        return _.has(ctx, "event");
+    },
+    "inQuery": function(core, ctx){
+        return _.has(ctx, "query");
     },
 };
 

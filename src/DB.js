@@ -21,12 +21,18 @@ var dbRange = function(ldb, opts, onData, callback_orig){
         });
         delete opts.prefix;
     }
-    ldb.createReadStream(opts)
-        .on("data", onData)
-        .on("error", function(err){
-            callback(err);
-        })
-        .on("end", callback);
+    var s = ldb.createReadStream(opts);
+    var stopRange = function(){
+        s.destroy();
+        callback();
+    };
+    s.on("error", function(err){
+        callback(err);
+    });
+    s.on("end", callback);
+    s.on("data", function(data){
+        onData(data, stopRange);
+    });
 };
 
 module.exports = function(opts){
@@ -352,9 +358,13 @@ module.exports = function(opts){
             dbRange(ldb, {
                 prefix: ["pico"],
                 values: false
-            }, function(key){
+            }, function(key, stopRange){
+                if(is_used){
+                    throw new Error("dbRange should have stopped");
+                }
                 if(key[2] === "ruleset" && key[3] === rid){
                     is_used = true;
+                    stopRange();
                 }
             }, function(err){
                 callback(err, is_used);

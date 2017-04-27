@@ -372,12 +372,18 @@ module.exports = function(conf, callback){
         });
     };
 
+    core.unRegisterRuleset = function(rid, callback){
+        //TODO
+        callback();
+    };
+
     registerAllEnabledRulesets(function(err){
         if(err) return callback(err);
         callback(void 0, {
             db: db,
             emitter: emitter,
             registerRuleset: core.registerRulesetSrc,
+            unRegisterRuleset: core.unRegisterRuleset,
             signalEvent: signalEvent,
             runQuery: runQuery
         });

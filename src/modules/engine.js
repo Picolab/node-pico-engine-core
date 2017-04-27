@@ -2,6 +2,7 @@ var _ = require("lodash");
 var url = require("url");
 var cocb = require("co-callback");
 var getArg = require("../getArg");
+var mkKRLfn = require("../mkKRLfn");
 var request = require("request");
 
 var installRulesetAndValidateIds = function(db, pico_id, rid, callback){
@@ -72,8 +73,7 @@ module.exports = function(core){
             }
             if(!_.isString(uri)){
                 return callback(new Error("registerRuleset expects, pico_id and rid or url+base"));
-            }
-            registerURL(uri, callback);
+            } registerURL(uri, callback);
         }),
         installRuleset: cocb.toYieldable(function(ctx, args, callback){
             var opts = getArg(args, "opts", 0);
@@ -114,7 +114,10 @@ module.exports = function(core){
                 }
                 doIt(_.head(rids));
             });
-        })
+        }),
+        unRegisterRuleset: mkKRLfn(["rid"], function(args, ctx, callback){
+            core.unRegisterRuleset(args.rid, callback);
+        }),
     };
 
     return {

@@ -1,4 +1,5 @@
 var _ = require("lodash");
+var λ = require("contra");
 var cuid = require("cuid");
 var crypto = require("crypto");
 var levelup = require("levelup");
@@ -132,9 +133,11 @@ module.exports = function(opts){
                 callback(undefined, new_channel);
             });
         },
+        //TODO rename addRulesetToPico
         addRuleset: function(opts, callback){
             ldb.put(["pico", opts.pico_id, "ruleset", opts.rid], {on: true}, callback);
         },
+        //TODO rename removeRulesetFromPico
         removeRuleset: function(pico_id, rid, callback){
             ldb.del(["pico", pico_id, "ruleset", rid], callback);
         },
@@ -370,46 +373,53 @@ module.exports = function(opts){
                 callback(err, is_used);
             });
         },
-        unregisterRuleset: function(rid, callback){
-            var error = false;
+        deleteRuleset: function(rid, callback){
+            var to_del = [
+                ["rulesets", "enabled", rid],
+            ];
+
+            var hashes = [];
             dbRange(ldb, {
-                prefix: ["pico"],
+                prefix: ["rulesets", "versions", rid],
                 values: false
             }, function(key){
-                if(key.length === 4 && key[2] === "ruleset" && key[3] === rid){
-                    error = true;
-                }
+                var hash = key[4];
+
+                to_del.push(key);
+                to_del.push(["rulesets", "krl", hash]);
+                hashes.push(hash);
             }, function(err){
-                if(error) return callback(new Error("Ruleset still installed"));
                 if(err) return callback(err);
-                ldb.del(["rulesets", "enabled", rid], function(err){});
-                var to_batch = [];
-                var prefixes = [
-                    ["rulesets", "krl"],
-                    ["rulesets", "url"],
-                    ["resultset", rid, "vars"],
-                    ["rulesets", "versions", rid]
-                ];
-                function dbRangeNext(){
-                    if(prefixes.length > 0){
-                        var prefix = prefixes.pop();
-                        dbRange(ldb, {
-                            prefix: prefix,
-                        }, function(data){
-                            if(prefix.length === 2){
-                                if(prefix[1] === "krl" && data.value["rid"] !== rid) return;
-                                if(prefix[1] === "url" && data.key[3] !== rid) return;
-                            }
-                            to_batch.push({type: "del", key: data.key});
-                        }, function(err){
-                            if(err) return callback(err);
-                            dbRangeNext();
-                        });
-                    } else {
-                        ldb.batch(to_batch, callback);
-                    }
-                }
-                dbRangeNext();
+                λ.each(hashes, function(hash, next){
+                    ldb.get(["rulesets", "krl", hash], function(err, data){
+                        if(err) return next(err);
+                        if(_.isString(data.url)){
+                            to_del.push([
+                                "rulesets",
+                                "url",
+                                data.url.toLowerCase().trim(),
+                                data.rid,
+                                hash
+                            ]);
+                        }
+                        next();
+                    });
+                }, function(err){
+                    if(err) return callback(err);
+
+                    dbRange(ldb, {
+                        prefix: ["resultset", rid, "vars"],
+                        values: false
+                    }, function(key){
+                        to_del.push(key);
+                    }, function(err){
+                        if(err) return callback(err);
+
+                        ldb.batch(_.map(to_del, function(key){
+                            return {type: "del", key: key};
+                        }), callback);
+                    });
+                });
             });
         }
     };

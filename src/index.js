@@ -372,9 +372,30 @@ module.exports = function(conf, callback){
         });
     };
 
-    core.unRegisterRuleset = function(rid, callback){
-        //TODO
-        callback();
+    core.unregisterRuleset = function(rid, callback){
+        db.isRulesetUsed(rid, function(err, is_used){
+            if(err) return callback(err);
+            if(is_used){
+                callback(new Error("Unable to unregisterRuleset: " + rid + " it is used by at least one pico"));
+                return;
+            }
+            db.deleteRuleset(rid, function(err){
+                if(err) return callback(err);
+
+                if(_.has(rulesets, rid)){
+                    _.each(rulesets[rid].rules, function(rule){
+                        _.each(rule.select && rule.select.graph, function(g, domain){
+                            _.each(g, function(exprs, type){
+                                _.unset(salience_graph, [domain, type, rid]);
+                            });
+                        });
+                    });
+                    delete rulesets[rid];
+                }
+
+                callback();
+            });
+        });
     };
 
     registerAllEnabledRulesets(function(err){
@@ -383,7 +404,7 @@ module.exports = function(conf, callback){
             db: db,
             emitter: emitter,
             registerRuleset: core.registerRulesetSrc,
-            unRegisterRuleset: core.unRegisterRuleset,
+            unregisterRuleset: core.unregisterRuleset,
             signalEvent: signalEvent,
             runQuery: runQuery
         });

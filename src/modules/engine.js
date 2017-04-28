@@ -115,8 +115,8 @@ module.exports = function(core){
                 doIt(_.head(rids));
             });
         }),
-        unRegisterRuleset: mkKRLfn(["rid"], function(args, ctx, callback){
-            core.unRegisterRuleset(args.rid, callback);
+        unregisterRuleset: mkKRLfn(["rid"], function(args, ctx, callback){
+            core.unregisterRuleset(args.rid, callback);
         }),
     };
 

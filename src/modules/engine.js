@@ -86,7 +86,8 @@ module.exports = function(core){
             }
             if(!_.isString(uri)){
                 return callback(new Error("registerRuleset expects, pico_id and rid or url+base"));
-            } registerURL(uri, callback);
+            }
+            registerURL(uri, callback);
         }),
         installRuleset: cocb.toYieldable(function(ctx, args, callback){
             var opts = getArg(args, "opts", 0);

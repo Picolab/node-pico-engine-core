@@ -56,7 +56,7 @@ module.exports = function(core){
                     ? urllib.resolve(opts.base, opts.url)
                     : opts.url;
             }
-            if(!_.isString(pico_id) || (!_.isString(rid) && !_.isString(uri))){
+            if(!_.isString(pico_id) || ( ( !_.isString(rid) && !_.isArray(rid) ) && !_.isString(uri))){
                 return callback(new Error("installRuleset expects, pico_id and rid or url+base"));
             }
 
@@ -65,9 +65,21 @@ module.exports = function(core){
                     callback(err, rid);
                 });
             };
-
+            
+            var doItTwoIt = function(rids){
+                for (var i = rids.length - 1; i >= 0; i--) {
+                    if( !_.isString(rids[i]) ){
+                        return callback(new Error("installRuleset expects every rid in array to be a string."));
+                    }
+                    doIt(rids[i]);
+                }
+            };
+            
             if(_.isString(rid)){
                 return doIt(rid);
+            }
+            if(_.isArray(rid)){
+                return doItTwoIt(rid);
             }
             core.db.findRulesetsByURL(uri, function(err, results){
                 if(err) return callback(err);

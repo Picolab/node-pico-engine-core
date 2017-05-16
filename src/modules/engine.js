@@ -56,18 +56,18 @@ module.exports = function(core){
             "url",
             "base",
         ], function(args, ctx, callback){
-            var rids = _.isString(args.rid)
-                ? [args.rid]
-                : (_.isArray(args.rid) ? _.uniq(args.rid) : []);
-
             var install = function(rid, callback){
                 core.installRuleset(args.pico_id, rid, function(err){
                     callback(err, rid);
                 });
             };
 
-            if(!_.isEmpty(rids)){
-                λ.map(rids, install, callback);
+            if(_.isString(args.rid)){
+                install(args.rid, callback);
+                return;
+            }
+            if(_.isArray(args.rid)){
+                λ.map(_.uniq(args.rid), install, callback);
                 return;
             }
             if(_.isString(args.url)){

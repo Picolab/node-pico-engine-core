@@ -3,6 +3,16 @@ var test = require("tape");
 var cocb = require("co-callback");
 var kengine = require("./engine");
 
+//wrap stubbed functions in this to simulate async
+var tick = function(fn){
+    return function(){
+        var args = _.toArray(arguments);
+        process.nextTick(function(){
+            fn.apply(null, args);
+        });
+    };
+};
+
 var mockEngine = function(core){
     return kengine(core).def;
 };
@@ -104,6 +114,61 @@ test("engine:registerRuleset", function(t){
             t.fail("should throw b/c no url is given");
         }catch(err){
             t.equals(err + "", "Error: registerRuleset expects `url`");
+        }
+
+    }, t.end);
+});
+
+test("engine:installRuleset", function(t){
+    cocb.run(function*(){
+        var engine = mockEngine({
+            installRuleset: tick(function(pico_id, rid, callback){
+                callback();
+            }),
+            registerRulesetURL: tick(function(url, callback){
+                callback(null, {
+                    rid: "REG:" + /\/([^\/]*)\.krl$/.exec(url)[1]
+                });
+            }),
+            db: {
+                findRulesetsByURL: tick(function(url, callback){
+                    if(url === "http://foo.bar/baz/qux.krl"){
+                        return callback(null, [{rid: "found"}]);
+                    }else if(url === "file:///too/many.krl"){
+                        return callback(null, [{rid: "a"}, {rid: "b"}, {rid: "c"}]);
+                    }
+                    callback(null, []);
+                }),
+            }
+        });
+
+        var inst = function*(id, rid, url, base){
+            return yield engine.installRuleset({}, {
+                pico_id: id,
+                rid: rid,
+                url: url,
+                base: base,
+            });
+        };
+
+        try{
+            yield inst("pico0");
+            t.fail("should throw b/c missing args");
+        }catch(err){
+            t.equals(err + "", "Error: installRuleset expects `rid` or `url`+`base`");
+        }
+
+        t.equals(yield inst("pico0", "foo.bar"), "foo.bar");
+        t.deepEquals(yield inst("pico0", ["foo.bar", "foo.qux"]), ["foo.bar", "foo.qux"]);
+        t.deepEquals(yield inst("pico0", []), []);
+        t.deepEquals(yield inst("pico0", null, "file:///foo/bar.krl"), "REG:bar");
+        t.deepEquals(yield inst("pico0", null, "qux.krl", "http://foo.bar/baz/"), "found");
+
+        try{
+            yield inst("pico0", null, "file:///too/many.krl");
+            t.fail("should throw b/c too many matched");
+        }catch(err){
+            t.equals(err + "", "Error: More than one rid found for the given url: a , b , c");
         }
 
     }, t.end);

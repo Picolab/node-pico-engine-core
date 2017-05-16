@@ -51,65 +51,54 @@ module.exports = function(core){
             });
         }),
         installRuleset: mkKRLfn([
-            "opts",
+            "pico_id",
+            "rid",
+            "url",
+            "base",
         ], function(args, ctx, callback){
-            var opts = args.opts;
+            var rids = _.isString(args.rid)
+                ? [args.rid]
+                : (_.isArray(args.rid) ? _.uniq(args.rid) : []);
 
-            var pico_id = opts.pico_id;
-            var rid = opts.rid;
-            var uri;
-            if(_.isString(opts.url)){
-                uri = _.isString(opts.base)
-                    ? urllib.resolve(opts.base, opts.url)
-                    : opts.url;
-            }
-            if(!_.isString(pico_id) || ( ( !_.isString(rid) && !_.isArray(rid) ) && !_.isString(uri))){
-                return callback(new Error("installRuleset expects, pico_id and rid or url+base"));
-            }
-
-            var doIt = function(rid){
-                core.installRuleset(pico_id, rid, function(err){
+            var install = function(rid, callback){
+                core.installRuleset(args.pico_id, rid, function(err){
                     callback(err, rid);
                 });
             };
-            
-            var doItTwoIt = function(rids){
-                for (var i = rids.length - 1; i >= 0; i--) {
-                    if( !_.isString(rids[i]) ){
-                        return callback(new Error("installRuleset expects every rid in array to be a string."));
+
+            if(!_.isEmpty(rids)){
+                λ.map(rids, install, callback);
+                return;
+            }
+            if(_.isString(args.url)){
+                var uri = _.isString(args.base)
+                    ? urllib.resolve(args.base, args.url)
+                    : args.url;
+                core.db.findRulesetsByURL(uri, function(err, results){
+                    if(err) return callback(err);
+                    var rids = _.uniq(_.map(results, "rid"));
+                    if(_.size(rids) === 0){
+                        core.registerRulesetURL(uri, function(err, data){
+                            if(err) return callback(err);
+                            install(data.rid, callback);
+                        });
+                        return;
                     }
-                    doIt(rids[i]);
-                }
-            };
-            
-            if(_.isString(rid)){
-                return doIt(rid);
+                    if(_.size(rids) !== 1){
+                        return callback(new Error("More than one rid found for the given url: " + rids.join(" , ")));
+                    }
+                    install(_.head(rids), callback);
+                });
+                return;
             }
-            if(_.isArray(rid)){
-                return doItTwoIt(rid);
-            }
-            core.db.findRulesetsByURL(uri, function(err, results){
-                if(err) return callback(err);
-                var rids = _.uniq(_.map(results, "rid"));
-                if(_.size(rids) === 0){
-                    core.registerRulesetURL(uri, function(err, data){
-                        if(err) return callback(err);
-                        doIt(data.rid);
-                    });
-                    return;
-                }
-                if(_.size(rids) !== 1){
-                    return callback(new Error("More than one rid found for the given url: " + rids.join(" , ")));
-                }
-                doIt(_.head(rids));
-            });
+            callback(new Error("installRuleset expects `rid` or `url`+`base`"));
         }),
         uninstallRuleset: mkKRLfn([
             "pico_id",
             "rid",
         ], function(args, ctx, callback){
             var rids = _.isArray(args.rid)
-                ? args.rid
+                ? _.uniq(args.rid)
                 : [args.rid];
 
             λ.each(rids, function(rid, next){

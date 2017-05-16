@@ -1,43 +1,50 @@
 var _ = require("lodash");
+var λ = require("contra");
 var urllib = require("url");
 var mkKRLfn = require("../mkKRLfn");
 
 module.exports = function(core){
     var fns = {
         newPico: mkKRLfn([
-            "opts",
         ], function(args, ctx, callback){
-            core.db.newPico(args.opts, callback);
+            core.db.newPico({}, callback);
         }),
         removePico: mkKRLfn([
-            "id",
+            "pico_id",
         ], function(args, ctx, callback){
-            core.db.removePico(args.id, callback);
+            core.db.removePico(args.pico_id, callback);
         }),
         newChannel: mkKRLfn([
-            "opts",
+            "pico_id",
+            "name",
+            "type",
         ], function(args, ctx, callback){
-            core.db.newChannel(args.opts, callback);
+            core.db.newChannel(args, callback);
         }),
         removeChannel: mkKRLfn([
-            "opts",
+            "eci",
         ], function(args, ctx, callback){
-            var opts = args.opts;
-            core.db.removeChannel(opts.pico_id, opts.eci, callback);
+            core.db.getPicoIDByECI(args.eci, function(err, pico_id){
+                if(err) return callback(err);
+
+                core.db.removeChannel(pico_id, args.eci, callback);
+            });
+        }),
+        getPicoIDByECI: mkKRLfn([
+            "eci",
+        ], function(args, ctx, callback){
+            core.db.getPicoIDByECI(args.eci, callback);
         }),
         registerRuleset: mkKRLfn([
-            "opts",
+            "url",
+            "base",
         ], function(args, ctx, callback){
-            var opts = args.opts;
-            var uri;
-            if(_.isString(opts.url)){
-                uri = _.isString(opts.base)
-                    ? urllib.resolve(opts.base, opts.url)
-                    : opts.url;
+            if(!_.isString(args.url)){
+                return callback(new Error("registerRuleset expects `url`"));
             }
-            if(!_.isString(uri)){
-                return callback(new Error("registerRuleset expects, pico_id and rid or url+base"));
-            }
+            var uri = _.isString(args.base)
+                ? urllib.resolve(args.base, args.url)
+                : args.url;
             core.registerRulesetURL(uri, function(err, data){
                 if(err) return callback(err);
                 callback(null, data.rid);
@@ -96,6 +103,18 @@ module.exports = function(core){
                 }
                 doIt(_.head(rids));
             });
+        }),
+        uninstallRuleset: mkKRLfn([
+            "pico_id",
+            "rid",
+        ], function(args, ctx, callback){
+            var rids = _.isArray(args.rid)
+                ? args.rid
+                : [args.rid];
+
+            λ.each(rids, function(rid, next){
+                core.uninstallRuleset(args.pico_id, rid, next);
+            }, callback);
         }),
         unregisterRuleset: mkKRLfn([
             "rid",

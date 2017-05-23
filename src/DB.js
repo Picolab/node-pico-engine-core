@@ -83,6 +83,28 @@ module.exports = function(opts){
                 callback(err, _.get(pico, ["pico", id]));
             });
         },
+        listChildren: function(pico_id, callback){
+            var children = [];
+            dbRange(ldb, {
+                prefix: ["pico", pico_id, "io.picolabs.pico", "vars", "children"],
+            }, function(data){
+                children = data.value.map(function(x) {
+                    return x.id;
+                });
+            }, function(err){
+                callback(err, children);
+            });
+        },
+        getParent: function(pico_id, callback){
+            var parent = {};
+            dbRange(ldb, {
+                prefix: ["pico", pico_id, "io.picolabs.pico", "vars", "parent"],
+            }, function(data){
+                parent = data.value.id;
+            }, function(err){
+                callback(err, parent);
+            });
+        },
         newPico: function(opts, callback){
             var new_pico = {
                 id: newID()
@@ -373,6 +395,16 @@ module.exports = function(opts){
                 rids.push(key[2]);
             }, function(err){
                 callback(err, rids);
+            });
+        },
+        listAllInstalledRIDs: function(pico_id, callback){
+            var channels = [];
+            dbRange(ldb, {
+                prefix: ["pico", pico_id, "ruleset"],
+            }, function(data){
+                channels.push(data.key[3]);
+            }, function(err){
+                callback(err, channels);
             });
         },
         isRulesetUsed: function(rid, callback){

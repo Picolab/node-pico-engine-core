@@ -414,6 +414,104 @@ module.exports = {
         "notfired": undefined,
         "always": undefined
       }
+    },
+    "scope": {
+      "name": "scope",
+      "select": {
+        "graph": { "defa": { "scope": { "expr_0": true } } },
+        "eventexprs": {
+          "expr_0": function* (ctx, aggregateEvent) {
+            return true;
+          }
+        },
+        "state_machine": {
+          "start": [[
+              "expr_0",
+              "end"
+            ]]
+        }
+      },
+      "prelude": function* (ctx) {
+        ctx.defaction(ctx, "noop", function* (ctx, getArg, hasArg, processActionBlock) {
+          yield processActionBlock(ctx, {
+            "actions": [{
+                "action": function* (ctx, runAction) {
+                  var returns = yield runAction(ctx, void 0, "noop", []);
+                }
+              }]
+          });
+          return ["did something!"];
+        });
+        ctx.defaction(ctx, "send_directive", function* (ctx, getArg, hasArg, processActionBlock) {
+          yield processActionBlock(ctx, {
+            "actions": [{
+                "action": function* (ctx, runAction) {
+                  var returns = yield runAction(ctx, void 0, "noop", []);
+                  ctx.scope.set("foo", returns[0]);
+                }
+              }]
+          });
+          return [yield ctx.callKRLstdlib("+", [
+              "send wat? noop returned: ",
+              ctx.scope.get("foo")
+            ])];
+        });
+        ctx.defaction(ctx, "echoAction", function* (ctx, getArg, hasArg, processActionBlock) {
+          yield processActionBlock(ctx, {
+            "actions": [{
+                "action": function* (ctx, runAction) {
+                  var returns = yield runAction(ctx, void 0, "noop", []);
+                }
+              }]
+          });
+          return [
+            "aint",
+            "no",
+            "echo"
+          ];
+        });
+      },
+      "action_block": {
+        "actions": [
+          {
+            "action": function* (ctx, runAction) {
+              var returns = yield runAction(ctx, void 0, "echoAction", [
+                "where",
+                "in",
+                "the"
+              ]);
+              ctx.scope.set("a", returns[0]);
+              ctx.scope.set("b", returns[1]);
+              ctx.scope.set("c", returns[2]);
+            }
+          },
+          {
+            "action": function* (ctx, runAction) {
+              var returns = yield runAction(ctx, void 0, "noop", []);
+              ctx.scope.set("d", returns[0]);
+            }
+          },
+          {
+            "action": function* (ctx, runAction) {
+              var returns = yield runAction(ctx, void 0, "send_directive", []);
+              ctx.scope.set("e", returns[0]);
+            }
+          }
+        ]
+      },
+      "postlude": {
+        "fired": function* (ctx) {
+          yield ctx.modules.set(ctx, "ent", "setting_val", [
+            ctx.scope.get("a"),
+            ctx.scope.get("b"),
+            ctx.scope.get("c"),
+            ctx.scope.get("d"),
+            ctx.scope.get("e")
+          ]);
+        },
+        "notfired": undefined,
+        "always": undefined
+      }
     }
   }
 };

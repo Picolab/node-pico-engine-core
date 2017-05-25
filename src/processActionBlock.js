@@ -21,15 +21,15 @@ var runSubAction = cocb.wrap(function*(ctx, domain, id, args){
         ];
     }
     if(id === "noop"){
-        return [];//returns nothing
-    }
-    if(id === "send_directive"){
-        return [
-            //returns only one value
-            yield send_directive(ctx, args)
-        ];
+        return [null];//returns nothing
     }
     if(!ctx.scope.has(id)){
+        if(id === "send_directive" || id === "sendDirective"){
+            return [
+                //returns only one value
+                yield send_directive(ctx, args)
+            ];
+        }
         throw new Error("`" + id + "` is not defined");
     }
     var definedAction = ctx.scope.get(id);

@@ -1442,6 +1442,14 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                 query("getSettingVal"),
                 ["where", "in", "the", "wat:whereinthe 433"]
             ],
+            [
+                signal("defa", "scope"),
+                []
+            ],
+            [
+                query("getSettingVal"),
+                ["aint", "no", "echo", null, "send wat? noop returned: null"]
+            ],
         ], t.end);
     });
 });

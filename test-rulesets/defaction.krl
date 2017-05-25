@@ -5,6 +5,7 @@ ruleset io.picolabs.defaction {
     global {
         foo = defaction(a){
             b = 2
+
             send_directive("foo", {
                 "a": a,
                 "b": b + 3
@@ -53,7 +54,7 @@ ruleset io.picolabs.defaction {
             returns a, b, c
         }
         complexAction = defaction(a, b){
-            c = 100
+            c = 100;
             d = c + b
 
             if c > 0 then
@@ -122,6 +123,42 @@ ruleset io.picolabs.defaction {
 
         fired {
             ent:setting_val := [a, b, c, d]
+        }
+    }
+    rule scope {
+        select when defa scope
+
+        pre {
+            noop = defaction(){
+
+                noop();
+
+                return "did something!"
+            }
+            send_directive = defaction(){
+
+                noop() setting(foo);
+
+                return "send wat? noop returned: " + foo
+            }
+            echoAction = defaction(){
+
+                noop();
+
+                returns "aint", "no", "echo"
+            }
+        }
+
+        every {
+            echoAction("where", "in", "the") setting(a, b, c);
+
+            noop() setting(d);
+
+            send_directive() setting(e);
+        }
+
+        fired {
+            ent:setting_val := [a, b, c, d, e]
         }
     }
 }

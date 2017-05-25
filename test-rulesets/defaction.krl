@@ -20,7 +20,9 @@ ruleset io.picolabs.defaction {
                 "a": one,
                 "b": two,
                 "c": three
-            });
+            }) setting(dir);
+
+            return dir
         }
         getSettingVal = function(){
             ent:setting_val;
@@ -72,12 +74,20 @@ ruleset io.picolabs.defaction {
     rule bar {
         select when defa bar
 
-        bar("baz", two = "qux", three = "quux");
+        bar(
+            "baz",
+            two = "qux",
+            three = "quux",
+        );
     }
     rule bar_setting {
         select when defa bar_setting
 
-        bar("baz", two = "qux", three = "quux") setting(val);
+        bar(
+            "baz",
+            two = "qux",
+            three = "quux",
+        ) setting(val);
 
         fired {
             ent:setting_val := val

@@ -34,7 +34,7 @@ ruleset io.picolabs.http {
             resp = http:get(
                 url,
                 qs = {"foo": "bar"},
-                headers = {"baz": "quix"}
+                headers = {"baz": "quix"},
             );
             ent:resp := fmtResp(resp)
         }
@@ -55,7 +55,7 @@ ruleset io.picolabs.http {
             url = event:attr("url")
         }
 
-        doPost(url, to = "bob", msg = "foobar");
+        doPost(url, "bob", "foobar");
     }
     rule http_post_setting {
         select when http_test post_setting

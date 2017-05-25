@@ -7,22 +7,27 @@ var send_directive = mkKRLfn([
     "name",
     "options",
 ], function(args, ctx, callback){
-    ctx.addActionResponse(ctx, "directive", {
+    callback(null, ctx.addActionResponse(ctx, "directive", {
         name: args.name,
         options: args.options || {},
-    });
-    callback();
+    }));
 });
 
 var runSubAction = cocb.wrap(function*(ctx, domain, id, args){
     if(domain){
-        return yield ctx.modules.action(ctx, domain, id, args);
+        return [
+            //modules only return one value
+            yield ctx.modules.action(ctx, domain, id, args)
+        ];
     }
     if(id === "noop"){
-        return;
+        return [];//returns nothing
     }
     if(id === "send_directive"){
-        return yield send_directive(ctx, args);
+        return [
+            //returns only one value
+            yield send_directive(ctx, args)
+        ];
     }
     if(!ctx.scope.has(id)){
         throw new Error("`" + id + "` is not defined");
@@ -34,7 +39,7 @@ var runSubAction = cocb.wrap(function*(ctx, domain, id, args){
     return yield definedAction(ctx, args);
 });
 
-var processAction = cocb.wrap(function*(ctx, action_block){
+var processActionBlock = cocb.wrap(function*(ctx, action_block){
     var did_fire = true;
 
     var condFn = _.get(action_block, ["condition"]);
@@ -56,18 +61,15 @@ var processAction = cocb.wrap(function*(ctx, action_block){
         actions = [];//don't run anything
     }
 
-    var returns = [];
-
     var i;
     for(i = 0; i < actions.length; i++){
         //TODO collect errors and respond individually to the client
         //TODO try{}catch(e){}
-        returns.push(yield runKRL(actions[i].action, ctx, runSubAction));
+        yield runKRL(actions[i].action, ctx, runSubAction);
     }
     return {
         did_fire: did_fire,
-        returns: returns,
     };
 });
 
-module.exports = processAction;
+module.exports = processActionBlock;

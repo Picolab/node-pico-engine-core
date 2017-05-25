@@ -1381,7 +1381,7 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
             ],
             [
                 query("getSettingVal"),
-                [{name: "bar", type: "directive", options: {a: "baz", b: "qux", c: "quux"},  meta: {eid: "1234", rid: "io.picolabs.defaction", rule_name: "bar_setting", txn_id: "TODO"}}]
+                {name: "bar", type: "directive", options: {a: "baz", b: "qux", c: "quux"},  meta: {eid: "1234", rid: "io.picolabs.defaction", rule_name: "bar_setting", txn_id: "TODO"}}
             ],
             [
                 signal("defa", "chooser", {val: "asdf"}),

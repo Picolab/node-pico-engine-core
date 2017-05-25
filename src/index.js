@@ -14,8 +14,8 @@ var SymbolTable = require("symbol-table");
 var EventEmitter = require("events");
 var processEvent = require("./processEvent");
 var processQuery = require("./processQuery");
-var processAction = require("./processAction");
 var RulesetRegistry = require("./RulesetRegistry");
+var processActionBlock = require("./processActionBlock");
 
 var log_levels = {
     "info": true,
@@ -69,14 +69,11 @@ module.exports = function(conf, callback){
         };
         ctx.defaction = function(ctx, name, fn){
             var actionFn = cocb.wrap(function*(ctx2, args){
-                var ctx3 = pushCTXScope(ctx2);
-                var action_block = yield fn(ctx3, function(name, index){
+                return yield fn(pushCTXScope(ctx2), function(name, index){
                     return getArg(args, name, index);
                 }, function(name, index){
                     return hasArg(args, name, index);
-                });
-                var r = yield processAction(ctx3, action_block);
-                return r.returns;
+                }, processActionBlock);
             });
             actionFn.is_a_defaction = true;
             return ctx.scope.set(name, actionFn);

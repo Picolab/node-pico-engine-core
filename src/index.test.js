@@ -1414,6 +1414,14 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                     next();
                 });
             },
+            [
+                signal("defa", "returns"),
+                [{name: "wat:whereinthe", options: {b: 333}}]
+            ],
+            [
+                query("getSettingVal"),
+                ["where", "in", "the", "wat:whereinthe 433"]
+            ],
         ], t.end);
     });
 });

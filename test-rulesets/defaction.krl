@@ -52,11 +52,14 @@ ruleset io.picolabs.defaction {
 
             returns a, b, c
         }
-        addAction = defaction(a, b){
+        complexAction = defaction(a, b){
+            c = 100
+            d = c + b
 
-            noop();
+            if c > 0 then
+                send_directive("wat:" + a, {"b": b}) setting(dir);
 
-            return a + b
+            return dir["name"] + " " + d
         }
         add = function(a, b){
             {
@@ -107,5 +110,18 @@ ruleset io.picolabs.defaction {
         select when defa add
 
         add(1, 2);
+    }
+    rule returns {
+        select when defa returns
+
+        every {
+            echoAction("where", "in", "the") setting(a, b, c);
+
+            complexAction(a + b + c, 333) setting(d);
+        }
+
+        fired {
+            ent:setting_val := [a, b, c, d]
+        }
     }
 }

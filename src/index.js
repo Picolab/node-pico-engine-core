@@ -124,9 +124,12 @@ module.exports = function(conf, callback){
             //this 'log-' prefix distinguishes user declared log events from other system generated events
             ctx.emit("log-" + level, val);
         };
-        ctx.callKRLstdlib = function(fn_name){
-            var args = _.toArray(arguments);
-            args[0] = ctx;
+        ctx.callKRLstdlib = function(fn_name, args){
+            if(_.isArray(args)){
+                args = [ctx].concat(args);
+            }else{
+                args[0] = ctx;
+            }
             var fn = krl_stdlib[fn_name];
             if(cocb.isGeneratorFunction(fn)){
                 return cocb.promiseRun(function*(){

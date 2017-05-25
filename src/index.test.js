@@ -469,7 +469,7 @@ test("PicoEngine - io.picolabs.chevron ruleset", function(t){
             λ.curry(pe.installRuleset, "id0", "io.picolabs.chevron"),
             [
                 query("d"),
-                "\n      hi 1 + 2 = 3\n      <h1>some<b>html</b></h1>\n    "
+                "\n            hi 1 + 2 = 3\n            <h1>some<b>html</b></h1>\n        "
             ]
         ], t.end);
     });
@@ -788,7 +788,7 @@ test("PicoEngine - io.picolabs.meta ruleset", function(t){
                     rid: "io.picolabs.meta",
                     host: "https://test-host",
                     rulesetName: "testing meta module",
-                    rulesetDescription: "\nsome description for the meta test module\n    ",
+                    rulesetDescription: "\nsome description for the meta test module\n        ",
                     rulesetAuthor: "meta author",
                     rulesetURI: "https://raw.githubusercontent.com/Picolab/node-pico-engine-core/master/test-rulesets/meta.krl",
                     ruleName: "meta_event",
@@ -803,7 +803,7 @@ test("PicoEngine - io.picolabs.meta ruleset", function(t){
                     rid: "io.picolabs.meta",
                     host: "https://test-host",
                     rulesetName: "testing meta module",
-                    rulesetDescription: "\nsome description for the meta test module\n    ",
+                    rulesetDescription: "\nsome description for the meta test module\n        ",
                     rulesetAuthor: "meta author",
                     rulesetURI: "https://raw.githubusercontent.com/Picolab/node-pico-engine-core/master/test-rulesets/meta.krl",
                     ruleName: void 0,

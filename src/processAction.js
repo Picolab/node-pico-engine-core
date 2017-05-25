@@ -1,6 +1,18 @@
 var _ = require("lodash");
 var cocb = require("co-callback");
 var runKRL = require("./runKRL");
+var mkKRLfn = require("./mkKRLfn");
+
+var send_directive = mkKRLfn([
+    "name",
+    "options",
+], function(args, ctx, callback){
+    ctx.addActionResponse(ctx, "directive", {
+        name: args.name,
+        options: args.options || {},
+    });
+    callback();
+});
 
 var runSubAction = cocb.wrap(function*(ctx, domain, id, args){
     if(domain){
@@ -10,10 +22,7 @@ var runSubAction = cocb.wrap(function*(ctx, domain, id, args){
         return;
     }
     if(id === "send_directive"){
-        return ctx.addActionResponse(ctx, "directive", {
-            name: args[0],
-            options: _.omit(args, "0")
-        });
+        return yield send_directive(ctx, args);
     }
     if(!ctx.scope.has(id)){
         throw new Error("`" + id + "` is not defined");

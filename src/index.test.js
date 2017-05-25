@@ -281,6 +281,26 @@ test("PicoEngine - io.picolabs.events ruleset", function(t){
                 signal("events", "on_choose", {thing: "wat?"}),
                 []
             ],
+            function(next){
+                signal("events", "on_sample")(function(err, resp){
+                    if(err) return next(err);
+                    t.equals(_.size(resp.directives), 1, "only one action should be sampled");
+                    t.ok(/^on_sample - (one|two|three)$/.test(_.head(resp.directives).name));
+                    next();
+                });
+            },
+            [
+                signal("events", "on_sample_if"),
+                []//nothing b/c it did not fire
+            ],
+            function(next){
+                signal("events", "on_sample_if", {fire: "yes"})(function(err, resp){
+                    if(err) return next(err);
+                    t.equals(_.size(resp.directives), 1, "only one action should be sampled");
+                    t.ok(/^on_sample - (one|two|three)$/.test(_.head(resp.directives).name));
+                    next();
+                });
+            },
             [
                 query("getOnChooseFired"),
                 false

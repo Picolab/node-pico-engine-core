@@ -53,8 +53,19 @@ var processActionBlock = cocb.wrap(function*(ctx, action_block){
         if(_.isEmpty(actions)){
             did_fire = false;//not fired b/c nothing matched
         }
-    }else if(!cond){
-        did_fire = false;//not fired b/c falsey cond
+    }else if(block_type === "sample"){
+        if(!cond){
+            did_fire = false;//not fired b/c falsey cond
+        }else if(!_.isEmpty(actions)){
+            //grab a random action
+            actions = [_.sample(actions)];
+        }
+    }else if(block_type === "every"){
+        if(!cond){
+            did_fire = false;//not fired b/c falsey cond
+        }
+    }else{
+        throw new Error("unsupported action block_type: " + block_type);
     }
 
     if(!did_fire){

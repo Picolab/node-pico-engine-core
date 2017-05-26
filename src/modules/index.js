@@ -11,7 +11,7 @@ var sub_modules = {
     meta: require("./meta"),
     schedule: require("./schedule"),
     time: require("./time"),
-    random: require("./random")
+    random: require("./random"),
 };
 
 module.exports = function(core){

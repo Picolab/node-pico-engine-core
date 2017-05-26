@@ -50,17 +50,23 @@ module.exports = function(core){
                 "event",
                 "host",
             ], function(args, ctx, callback){
-                //first normalize the event to the expected format
+                //first validate/normalize the event object
+                var getAndAssertPart = function(key){
+                    var val = _.get(args, ["event", key]);
+                    if(!_.isString(val)){
+                        throw new Error("event:send - event." + key + " is required");
+                    }
+                    return val;
+                };
                 var event = {
-                    "eci": _.get(args, ["event", "eci"], ctx.eci),
-                    "eid": _.get(args, ["event", "eid"], "none"),
-                    "domain": _.get(args, ["event", "domain"], ""),
-                    "type": _.get(args, ["event", "type"], ""),
-                    "attrs": _.get(args, ["event", "attrs"], {})
+                    eci: getAndAssertPart("eci"),
+                    eid: getAndAssertPart("eid"),
+                    domain: getAndAssertPart("domain"),
+                    type: getAndAssertPart("type"),
+                    attrs: _.get(args, ["event", "attrs"], {}),
                 };
                 if(args.host){
                     var url = args.host;
-                    //host: "https://test-host",
                     url += "/sky/event";
                     url += "/" + event.eci;
                     url += "/" + event.eid;

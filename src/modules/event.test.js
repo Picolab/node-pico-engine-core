@@ -1,9 +1,10 @@
 //var _ = require("lodash");
 var test = require("tape");
+var http = require("http");
 var cocb = require("co-callback");
 var event_module = require("./event");
 
-test("module event:attr(name)", function(t){
+test("module - event:attr(name)", function(t){
     cocb.run(function*(){
         var kevent = event_module();
 
@@ -21,5 +22,44 @@ test("module event:attr(name)", function(t){
 
     }, function(err){
         t.end(err);
+    });
+});
+
+test("module - event:send(event, host = null)", function(t){
+    var server_reached = false;
+    var server = http.createServer(function(req, res){
+        server_reached = true;
+
+        t.equals(req.url, "/sky/event/some-eci/123/some-d/some-t?foo=bar");
+
+        res.end();
+        server.close();
+        t.end();
+    });
+    server.listen(0, function(){
+        var host = "http://localhost:" + server.address().port;
+        cocb.run(function*(){
+
+            var kevent = event_module();
+
+            t.equals(
+                yield kevent.actions.send({}, {
+                    event: {
+                        eci: "some-eci",
+                        eid: "123",
+                        domain: "some-d",
+                        type: "some-t",
+                        attrs: {foo: "bar"},
+                    },
+                    host: host,
+                }),
+                void 0//returns nothing
+            );
+            t.equals(server_reached, false, "should be async, i.e. server not reached yet");
+        }, function(err){
+            if(err){
+                t.end(err);
+            }
+        });
     });
 });

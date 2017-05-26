@@ -60,7 +60,9 @@ module.exports = function(core){
                 };
                 var event = {
                     eci: getAndAssertPart("eci"),
-                    eid: getAndAssertPart("eid"),
+                    eid: _.isString(_.get(args, ["event", "eid"]))
+                        ? args.event.eid
+                        : "none",
                     domain: getAndAssertPart("domain"),
                     type: getAndAssertPart("type"),
                     attrs: _.get(args, ["event", "attrs"], {}),

@@ -30,7 +30,7 @@ test("module - event:send(event, host = null)", function(t){
     var server = http.createServer(function(req, res){
         server_reached = true;
 
-        t.equals(req.url, "/sky/event/some-eci/123/some-d/some-t?foo=bar");
+        t.equals(req.url, "/sky/event/some-eci/none/some-d/some-t?foo=bar");
 
         res.end();
         server.close();
@@ -46,7 +46,6 @@ test("module - event:send(event, host = null)", function(t){
                 yield kevent.actions.send({}, {
                     event: {
                         eci: "some-eci",
-                        eid: "123",
                         domain: "some-d",
                         type: "some-t",
                         attrs: {foo: "bar"},

@@ -1152,7 +1152,7 @@ kind-of@^3.0.2:
   dependencies:
     is-buffer "^1.1.5"
 
-krl-compiler@>=0.32.5:
+krl-compiler@^0.32.5:
   version "0.32.5"
   resolved "https://registry.yarnpkg.com/krl-compiler/-/krl-compiler-0.32.5.tgz#cce3a55eb60eede456b93b5d31592a58fad2e95a"
   dependencies:

@@ -1,6 +1,7 @@
 var _ = require("lodash");
 var mkKRLfn = require("../mkKRLfn");
 var request = require("request");
+var cleanEvent = require("../cleanEvent");
 
 module.exports = function(core){
     var fns = {
@@ -50,23 +51,13 @@ module.exports = function(core){
                 "event",
                 "host",
             ], function(args, ctx, callback){
-                //first validate/normalize the event object
-                var getAndAssertPart = function(key){
-                    var val = _.get(args, ["event", key]);
-                    if(!_.isString(val)){
-                        throw new Error("event:send - event." + key + " is required");
-                    }
-                    return val;
-                };
-                var event = {
-                    eci: getAndAssertPart("eci"),
-                    eid: _.isString(_.get(args, ["event", "eid"]))
-                        ? args.event.eid
-                        : "none",
-                    domain: getAndAssertPart("domain"),
-                    type: getAndAssertPart("type"),
-                    attrs: _.get(args, ["event", "attrs"], {}),
-                };
+                var event;
+                try{
+                    //validate + normalize event, and make sure is not mutated
+                    event = cleanEvent(args.event);
+                }catch(err){
+                    return callback(err);
+                }
                 if(args.host){
                     var url = args.host;
                     url += "/sky/event";

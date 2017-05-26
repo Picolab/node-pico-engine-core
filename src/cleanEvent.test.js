@@ -89,5 +89,19 @@ test("event = cleanEvent(event)", function(t){
         attrs: {" foo ": " don't trim these   "}
     });
 
+    //no timestamp
+    t.deepEquals(cleanEvent({
+        eci: "eci123",
+        domain: "foo",
+        type: "bar",
+        timestamp: new Date(),
+    }), {
+        eci: "eci123",
+        eid: "none",
+        domain: "foo",
+        type: "bar",
+        attrs: {},
+    });
+
     t.end();
 });

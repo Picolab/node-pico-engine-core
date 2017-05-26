@@ -101,7 +101,14 @@ test("PicoEngine - hello_world ruleset", function(t){
                 rid: "io.picolabs.hello_world",
                 name: "hello",
                 args: {obj: "Bob"}
-            })
+            }),
+
+            error_event: function(next){
+                pe.signalEvent({}, function(err){
+                    t.equals(err + "", "Error: missing event.eci");
+                    next();
+                });
+            },
 
         }, function(err, data){
             if(err) return t.end(err);

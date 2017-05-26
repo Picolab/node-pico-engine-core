@@ -2,6 +2,7 @@ var _ = require("lodash");
 var λ = require("contra");
 var DB = require("./DB");
 var cocb = require("co-callback");
+var cuid = require("cuid");
 var getArg = require("./getArg");
 var hasArg = require("./hasArg");
 var runKRL = require("./runKRL");
@@ -287,6 +288,9 @@ module.exports = function(conf, callback){
             return callback(err);
         }
 
+        if(event.eid === "none"){
+            event.eid = cuid();
+        }
         event.timestamp = conf.allow_event_time_override && _.isDate(event_orig.timestamp)
             ? event_orig.timestamp
             : new Date();

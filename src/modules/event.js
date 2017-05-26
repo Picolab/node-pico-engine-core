@@ -7,7 +7,7 @@ module.exports = function(core){
         attr: mkKRLfn([
             "name",
         ], function(args, ctx, callback){
-            callback(null, ctx.event.attrs[args.name]);
+            callback(null, _.get(ctx, ["event", "attrs", args.name], null));
         }),
         attrs: mkKRLfn([
         ], function(args, ctx, callback){

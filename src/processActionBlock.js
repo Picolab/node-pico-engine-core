@@ -13,30 +13,36 @@ var send_directive = mkKRLfn([
     }));
 });
 
-var runAction = cocb.wrap(function*(ctx, domain, id, args){
+var runAction = cocb.wrap(function*(ctx, domain, id, args, setting){
+    var returns = [];
     if(domain){
-        return [
+        returns = [
             //modules only return one value
             yield ctx.modules.action(ctx, domain, id, args)
         ];
-    }
-    if(id === "noop"){
-        return [null];//returns nothing
-    }
-    if(!ctx.scope.has(id)){
-        if(id === "send_directive" || id === "sendDirective"){
-            return [
-                //returns only one value
-                yield send_directive(ctx, args)
-            ];
+    }else if(id === "noop"){
+        returns = [];//returns nothing
+    }else if(ctx.scope.has(id)){
+        var definedAction = ctx.scope.get(id);
+        if(definedAction.is_a_defaction !== true){
+            throw new Error("`" + id + "` is not defined as an action");
         }
+        returns = yield definedAction(ctx, args);
+    }else if(id === "send_directive" || id === "sendDirective"){
+        returns = [
+            //returns only one value
+            yield send_directive(ctx, args)
+        ];
+    }else{
         throw new Error("`" + id + "` is not defined");
     }
-    var definedAction = ctx.scope.get(id);
-    if(definedAction.is_a_defaction !== true){
-        throw new Error("`" + id + "` is not defined as an action");
-    }
-    return yield definedAction(ctx, args);
+    _.each(setting, function(id, i){
+        var val = returns[i];
+        if(val === void 0 || _.isNaN(val)){
+            val = null;
+        }
+        ctx.scope.set(id, val);
+    });
 });
 
 var processActionBlock = cocb.wrap(function*(ctx, action_block){

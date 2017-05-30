@@ -1,6 +1,5 @@
 var _ = require("lodash");
 var cocb = require("co-callback");
-var runKRL = require("./runKRL");
 var mkKRLfn = require("./mkKRLfn");
 
 var send_directive = mkKRLfn([
@@ -13,7 +12,7 @@ var send_directive = mkKRLfn([
     }));
 });
 
-var runAction = cocb.wrap(function*(ctx, domain, id, args, setting){
+module.exports = cocb.wrap(function*(ctx, domain, id, args, setting){
     var returns = [];
     if(domain){
         returns = [
@@ -44,42 +43,3 @@ var runAction = cocb.wrap(function*(ctx, domain, id, args, setting){
         ctx.scope.set(id, val);
     });
 });
-
-var processActionBlock = cocb.wrap(function*(ctx, action_block){
-
-    var condFn = _.get(action_block, ["condition"]);
-    var block_type = _.get(action_block, ["block_type"], "every");
-    var discriminantFn = _.get(action_block, ["discriminant"]);
-    var actions = _.get(action_block, ["actions"], []);
-
-
-    var did_fire = condFn
-        ? yield runKRL(condFn, ctx)
-        : true;
-
-
-    if(did_fire){
-        if(block_type === "sample" && !_.isEmpty(actions)){
-            //grab a random action
-            actions = [_.sample(actions)];
-        }
-        if(discriminantFn){//choose
-            var discriminant_val = yield runKRL(discriminantFn, ctx);
-            actions = _.filter(actions, function(action){
-                return action.label === discriminant_val;
-            });
-        }
-
-        var i;
-        for(i = 0; i < actions.length; i++){
-            //TODO collect errors and respond individually to the client
-            //TODO try{}catch(e){}
-            yield runKRL(actions[i].action, ctx, runAction);
-        }
-    }
-    return {
-        did_fire: did_fire,
-    };
-});
-
-module.exports = processActionBlock;

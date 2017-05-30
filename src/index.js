@@ -9,6 +9,7 @@ var runKRL = require("./runKRL");
 var Modules = require("./modules");
 var PicoQueue = require("./PicoQueue");
 var Scheduler = require("./Scheduler");
+var runAction = require("./runAction");
 var cleanEvent = require("./cleanEvent");
 var krl_stdlib = require("krl-stdlib");
 var getKRLByURL = require("./getKRLByURL");
@@ -17,7 +18,6 @@ var EventEmitter = require("events");
 var processEvent = require("./processEvent");
 var processQuery = require("./processQuery");
 var RulesetRegistry = require("./RulesetRegistry");
-var processActionBlock = require("./processActionBlock");
 
 var applyFn = cocb.wrap(function*(fn, ctx, args){
     if(!_.isFunction(fn)){
@@ -86,7 +86,7 @@ module.exports = function(conf, callback){
                     return getArg(args, name, index);
                 }, function(name, index){
                     return hasArg(args, name, index);
-                }, processActionBlock);
+                }, runAction);
             });
             actionFn.is_a_defaction = true;
             return ctx.scope.set(name, actionFn);

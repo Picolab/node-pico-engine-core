@@ -966,8 +966,8 @@ is-date-object@^1.0.1:
   resolved "https://registry.yarnpkg.com/is-date-object/-/is-date-object-1.0.1.tgz#9aa20eb6aeebbff77fbd33e74ca01b33581d3a16"
 
 is-dotfile@^1.0.0:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/is-dotfile/-/is-dotfile-1.0.2.tgz#2c132383f39199f8edc268ca01b9b007d205cc4d"
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/is-dotfile/-/is-dotfile-1.0.3.tgz#a6a2f32ffd2dfb04f5ca25ecd0f6b83cf798a1e1"
 
 is-equal-shallow@^0.1.3:
   version "0.1.3"
@@ -1152,9 +1152,9 @@ kind-of@^3.0.2:
   dependencies:
     is-buffer "^1.1.5"
 
-krl-compiler@^0.32.5:
-  version "0.32.5"
-  resolved "https://registry.yarnpkg.com/krl-compiler/-/krl-compiler-0.32.5.tgz#cce3a55eb60eede456b93b5d31592a58fad2e95a"
+krl-compiler@^0.33.0:
+  version "0.33.0"
+  resolved "https://registry.yarnpkg.com/krl-compiler/-/krl-compiler-0.33.0.tgz#ffbb64d321f41825e29c6a0fce9b584ff739c12b"
   dependencies:
     btoa "^1.1.2"
     escodegen "^1.8.0"
@@ -1204,8 +1204,8 @@ level-json-coerce-null@^1.0.0:
   resolved "https://registry.yarnpkg.com/level-json-coerce-null/-/level-json-coerce-null-1.0.1.tgz#943240828be0ba1d1eb2cd0782365b3f006ae1bc"
 
 levelup@^1.3.2:
-  version "1.3.7"
-  resolved "https://registry.yarnpkg.com/levelup/-/levelup-1.3.7.tgz#70df7c1116fbc8b9efc434f4cfa21f27e2eef9f9"
+  version "1.3.8"
+  resolved "https://registry.yarnpkg.com/levelup/-/levelup-1.3.8.tgz#fb442c488efbea1043f7eb9929a792a74fbd1da6"
   dependencies:
     deferred-leveldown "~1.2.1"
     level-codec "~6.1.0"

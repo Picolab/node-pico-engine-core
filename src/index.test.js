@@ -1468,8 +1468,7 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
             ],
             function(next){
                 signal("defa", "trying_to_use_action_as_fn")(function(err){
-                    t.ok(err);
-                    //TODO error about trying to use an action as a function
+                    t.equals(err + "", "Error: actions can only be called in the rule action block");
                     next();
                 });
             },

@@ -19,6 +19,16 @@ var processQuery = require("./processQuery");
 var RulesetRegistry = require("./RulesetRegistry");
 var processActionBlock = require("./processActionBlock");
 
+var applyFn = cocb.wrap(function*(fn, ctx, args){
+    if(!_.isFunction(fn)){
+        throw new Error("Not a function");
+    }
+    if(fn.is_a_defaction){
+        throw new Error("actions can only be called in the rule action block");
+    }
+    return yield fn(ctx, args);
+});
+
 var log_levels = {
     "info": true,
     "debug": true,
@@ -54,6 +64,7 @@ module.exports = function(conf, callback){
         }(ctx.rid));//pass in the rid at mkCTX creation so it is not later mutated
 
         ctx.modules = modules;
+        ctx.applyFn = applyFn;
         var pushCTXScope = function(ctx2){
             return mkCTX(_.assign({}, ctx2, {
                 rid: ctx.rid,//keep your original rid

@@ -40,7 +40,6 @@ var runAction = cocb.wrap(function*(ctx, domain, id, args){
 });
 
 var processActionBlock = cocb.wrap(function*(ctx, action_block){
-    var did_fire = true;
 
     var condFn = _.get(action_block, ["condition"]);
     var block_type = _.get(action_block, ["block_type"], "every");
@@ -48,37 +47,29 @@ var processActionBlock = cocb.wrap(function*(ctx, action_block){
     var actions = _.get(action_block, ["actions"], []);
 
 
-    var cond = condFn ? yield runKRL(condFn, ctx) : true;
+    var did_fire = condFn
+        ? yield runKRL(condFn, ctx)
+        : true;
 
 
-    if(block_type === "sample" && !_.isEmpty(actions)){
-        //grab a random action
-        actions = [_.sample(actions)];
-    }
-
-    if(!cond){
-        did_fire = false;//not fired b/c falsey cond
-    }else{
+    if(did_fire){
+        if(block_type === "sample" && !_.isEmpty(actions)){
+            //grab a random action
+            actions = [_.sample(actions)];
+        }
         if(discriminantFn){//choose
             var discriminant_val = yield runKRL(discriminantFn, ctx);
             actions = _.filter(actions, function(action){
                 return action.label === discriminant_val;
             });
-            if(_.isEmpty(actions)){
-                did_fire = false;//not fired b/c nothing matched
-            }
         }
-    }
 
-    if(!did_fire){
-        actions = [];//don't run anything
-    }
-
-    var i;
-    for(i = 0; i < actions.length; i++){
-        //TODO collect errors and respond individually to the client
-        //TODO try{}catch(e){}
-        yield runKRL(actions[i].action, ctx, runAction);
+        var i;
+        for(i = 0; i < actions.length; i++){
+            //TODO collect errors and respond individually to the client
+            //TODO try{}catch(e){}
+            yield runKRL(actions[i].action, ctx, runAction);
+        }
     }
     return {
         did_fire: did_fire,

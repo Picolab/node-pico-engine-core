@@ -285,12 +285,12 @@ test("PicoEngine - io.picolabs.events ruleset", function(t){
                 signal("events", "on_choose", {thing: "wat?"}),
                 []
             ],
-            [query("getOnChooseFired"), false],
+            [query("getOnChooseFired"), true],//still true even though no match
             [
                 signal("events", "on_choose_if", {fire: "no", thing: "one"}),
                 []//condition failed
             ],
-            [query("getOnChooseFired"), false],
+            [query("getOnChooseFired"), false],// b/c condition failed
             [
                 signal("events", "on_choose_if", {fire: "yes", thing: "one"}),
                 [{name: "on_choose_if - one", options: {}}]
@@ -300,7 +300,7 @@ test("PicoEngine - io.picolabs.events ruleset", function(t){
                 signal("events", "on_choose_if", {fire: "yes", thing: "wat?"}),
                 []
             ],
-            [query("getOnChooseFired"), false],//condition true but no match
+            [query("getOnChooseFired"), true],// b/c condition true
             function(next){
                 signal("events", "on_sample")(function(err, resp){
                     if(err) return next(err);

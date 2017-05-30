@@ -152,16 +152,6 @@ module.exports = function(conf, callback){
 
     var initializeRulest = cocb.wrap(function*(rs, loadDepRS){
         rs.scope = SymbolTable();
-        var ctx = mkCTX({
-            rid: rs.rid,
-            scope: rs.scope
-        });
-        if(_.isFunction(rs.meta && rs.meta.configure)){
-            yield runKRL(rs.meta.configure, ctx);
-        }
-        if(_.isFunction(rs.global)){
-            yield runKRL(rs.global, ctx);
-        }
         rs.modules_used = {};
         var use_array = _.values(rs.meta && rs.meta.use);
         var i, use, dep_rs, ctx2;
@@ -196,6 +186,16 @@ module.exports = function(conf, callback){
                 provides: dep_rs.meta.provides
             };
             core.rsreg.provideKey(rs.rid, use.rid);
+        }
+        var ctx = mkCTX({
+            rid: rs.rid,
+            scope: rs.scope
+        });
+        if(_.isFunction(rs.meta && rs.meta.configure)){
+            yield runKRL(rs.meta.configure, ctx);
+        }
+        if(_.isFunction(rs.global)){
+            yield runKRL(rs.global, ctx);
         }
     });
 

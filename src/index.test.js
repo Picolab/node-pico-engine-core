@@ -1537,6 +1537,9 @@ test("PicoEngine - io.picolabs.key* rulesets", function(t){
             [query2("getFoo"), "foo key just a string"],
             qError(query3("getFoo"), "Error: keys:foo not defined"),//b/c used3 never requires it
 
+            //keys:* should work directly in global block
+            [query1("foo_global"), "foo key just a string"],
+
             [query1("getBar"), {baz: "baz subkey for bar key", qux: "qux subkey for bar key"}],
             [query1("getBarN", {name: "baz"}), "baz subkey for bar key"],
             [query1("getBarN", {name: "qux"}), "qux subkey for bar key"],

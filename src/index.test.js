@@ -1466,6 +1466,13 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                 query("getSettingVal"),
                 ["aint", "no", "echo", null, "send wat? noop returned: null"]
             ],
+            function(next){
+                signal("defa", "trying_to_use_action_as_fn")(function(err){
+                    t.ok(err);
+                    //TODO error about trying to use an action as a function
+                    next();
+                });
+            },
         ], t.end);
     });
 });

@@ -82,17 +82,12 @@ var evalRule = cocb.wrap(function*(ctx, rule){
 
     if(action_r.did_fire){
         ctx.emit("debug", "fired");
-        if(_.get(rule, ["postlude", "fired"])){
-            yield runKRL(_.get(rule, ["postlude", "fired"]), ctx);
-        }
     }else{
         ctx.emit("debug", "not fired");
-        if(_.get(rule, ["postlude", "notfired"])){
-            yield runKRL(_.get(rule, ["postlude", "notfired"]), ctx);
-        }
     }
-    if(_.get(rule, ["postlude", "always"])){
-        yield runKRL(_.get(rule, ["postlude", "always"]), ctx);
+
+    if(rule.postlude){
+        yield runKRL(rule.postlude, ctx, action_r.did_fire);
     }
 });
 

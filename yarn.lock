@@ -1196,9 +1196,9 @@ krl-parser@^0.24.0:
     line-column "^1.0.2"
     nearley "2.9.x"
 
-krl-stdlib@^0.7.0:
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/krl-stdlib/-/krl-stdlib-0.7.0.tgz#48c8df799a178ca983a13a48dbb929d052de5561"
+krl-stdlib@^0.7.1:
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/krl-stdlib/-/krl-stdlib-0.7.1.tgz#acdaee56e7fe6ace91b2c9cd4119ca1b175c8215"
   dependencies:
     lodash "^4.13.1"
 

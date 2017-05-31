@@ -36,7 +36,7 @@ var log_levels = {
     "error": true,
 };
 
-module.exports = function(conf, callback){
+module.exports = function(conf){
     var db = DB(conf.db);
     _.each(db, function(val, key){
         if(_.isFunction(val)){
@@ -447,47 +447,62 @@ module.exports = function(conf, callback){
         db.removeRulesetFromPico(pico_id, rid, callback);
     };
 
-    registerAllEnabledRulesets(function(err){
-        if(err) return callback(err);
-        var pe = {
-            emitter: emitter,
-
-            signalEvent: signalEvent,
-            runQuery: runQuery,
-
-            registerRuleset: core.registerRuleset,
-            registerRulesetURL: core.registerRulesetURL,
-            flushRuleset: core.flushRuleset,
-            unregisterRuleset: core.unregisterRuleset,
-
-            newPico: db.newPico,
-            newChannel: db.newChannel,
-            removeChannel: db.removeChannel,
-            getOwnerECI: db.getOwnerECI,
-            installRuleset: core.installRuleset,
-            uninstallRuleset: core.uninstallRuleset,
-            removePico: db.removePico,
-
-            putEntVar: db.putEntVar,
-            getEntVar: db.getEntVar,
-            removeEntVar: db.removeEntVar,
-
-            dbDump: db.toObj,
-        };
-        if(conf.___core_testing_mode){
-            pe.scheduler = core.scheduler;
-            pe.modules = modules;
-        }
-        //restart "cron"
+    var resumeScheduler = function(callback){
         db.listScheduled(function(err, vals){
             if(err) return callback(err);
+
+            //resume the cron tasks
             _.each(vals, function(val){
                 if(!_.isString(val.timespec)){
                     return;
                 }
                 core.scheduler.addCron(val.timespec, val.id, val.event);
             });
-            callback(void 0, pe);
+
+            //resume `schedule .. at` queue
+            core.scheduler.update();
+
+            callback();
         });
-    });
+    };
+
+
+    var pe = {
+        emitter: emitter,
+
+        signalEvent: signalEvent,
+        runQuery: runQuery,
+
+        registerRuleset: core.registerRuleset,
+        registerRulesetURL: core.registerRulesetURL,
+        flushRuleset: core.flushRuleset,
+        unregisterRuleset: core.unregisterRuleset,
+
+        newPico: db.newPico,
+        newChannel: db.newChannel,
+        removeChannel: db.removeChannel,
+        getOwnerECI: db.getOwnerECI,
+        installRuleset: core.installRuleset,
+        uninstallRuleset: core.uninstallRuleset,
+        removePico: db.removePico,
+
+        putEntVar: db.putEntVar,
+        getEntVar: db.getEntVar,
+        removeEntVar: db.removeEntVar,
+
+        dbDump: db.toObj,
+    };
+    if(conf.___core_testing_mode){
+        pe.scheduler = core.scheduler;
+        pe.modules = modules;
+    }
+
+    pe.start = function(callback){
+        registerAllEnabledRulesets(function(err){
+            if(err) return callback(err);
+            resumeScheduler(callback);
+        });
+    };
+
+    return pe;
 };

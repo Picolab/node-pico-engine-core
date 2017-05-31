@@ -614,9 +614,9 @@ estraverse@~4.1.0:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/estraverse/-/estraverse-4.1.1.tgz#f6caca728933a850ef90661d0e17982ba47111a2"
 
-estree-builder@^1.6.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/estree-builder/-/estree-builder-1.6.0.tgz#bbf5630f6899a7f401142e82819c5924485e564c"
+estree-builder@^1.7.0:
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/estree-builder/-/estree-builder-1.7.0.tgz#4342331d280a43538bfe070a4256824c1df332d5"
 
 estree-loc@^2.0.0:
   version "2.0.0"
@@ -1152,13 +1152,13 @@ kind-of@^3.0.2:
   dependencies:
     is-buffer "^1.1.5"
 
-krl-compiler@^0.33.0:
-  version "0.33.0"
-  resolved "https://registry.yarnpkg.com/krl-compiler/-/krl-compiler-0.33.0.tgz#ffbb64d321f41825e29c6a0fce9b584ff739c12b"
+krl-compiler@^0.34.0:
+  version "0.34.0"
+  resolved "https://registry.yarnpkg.com/krl-compiler/-/krl-compiler-0.34.0.tgz#f1873e526304ffbf59d12dd1c6d2585f31d7de33"
   dependencies:
     btoa "^1.1.2"
     escodegen "^1.8.0"
-    estree-builder "^1.6.0"
+    estree-builder "^1.7.0"
     estree-loc "^2.0.0"
     krl-parser "^0.24.0"
     lodash "^4.13.1"

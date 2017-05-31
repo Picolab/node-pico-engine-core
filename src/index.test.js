@@ -445,7 +445,7 @@ test("PicoEngine - io.picolabs.operators ruleset", function(t){
                 {
                     "str_as_num": 100.25,
                     "num_as_str": "1.05",
-                    "regex_as_str": "blah",
+                    "regex_as_str": "re#blah#i",
                     "isnull": [
                         false,
                         false,
@@ -682,7 +682,7 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
                 [{name: "dflt_info", options: {info: {
                     name: "Bob",
                     memo: void 0,//there is nothing stored in that `ent` var on this pico
-                    privateFn: "privateFn = name: Bob memo: undefined"
+                    privateFn: "privateFn = name: Bob memo: null"
                 }}}]
             ],
             [
@@ -690,7 +690,7 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
                 [{name: "conf_info", options: {info: {
                     name: "Jim",
                     memo: void 0,//there is nothing stored in that `ent` var on this pico
-                    privateFn: "privateFn = name: Jim memo: undefined"
+                    privateFn: "privateFn = name: Jim memo: null"
                 }}}]
             ],
 

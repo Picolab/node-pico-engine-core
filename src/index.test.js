@@ -1954,3 +1954,73 @@ test("PicoEngine - (re)registering ruleset shouldn't mess up state", function(t)
         });
     });
 });
+
+test("PicoEngine - io.picolabs.test-error-messages", function(t){
+    mkTestPicoEngine({}, function(err, pe){
+        if(err)return t.end(err);
+
+        λ.series([
+            λ.curry(pe.newPico, {}),
+            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            λ.curry(pe.installRuleset, "id0", "io.picolabs.test-error-messages"),
+
+            function(next){
+                pe.runQuery(void 0, function(err){
+                    t.equals(err + "", "Error: missing query.eci");
+                    t.notOk(err.notFound);
+                    next();
+                });
+            },
+            function(next){
+                pe.runQuery({eci: null}, function(err){
+                    t.equals(err + "", "Error: missing query.eci");
+                    t.notOk(err.notFound);
+                    next();
+                });
+            },
+            function(next){
+                pe.runQuery({eci: "foo"}, function(err){
+                    t.equals(err + "", "NotFoundError: ECI not found: foo");
+                    t.ok(err.notFound);
+                    next();
+                });
+            },
+            function(next){
+                pe.runQuery({
+                    eci: "id1",
+                    rid: "not-an-rid",
+                    name: "hello",
+                    args: {obj: "Bob"}
+                }, function(err){
+                    t.equals(err + "", "Error: Pico does not have that rid: not-an-rid");
+                    next();
+                });
+            },
+            function(next){
+                pe.runQuery({
+                    eci: "id1",
+                    rid: "io.picolabs.test-error-messages",
+                    name: "zzz",
+                    args: {obj: "Bob"}
+                }, function(err){
+                    t.equals(err + "", "Error: Not shared: zzz");
+                    t.notOk(err.notFound);
+                    next();
+                });
+            },
+            function(next){
+                pe.runQuery({
+                    eci: "id1",
+                    rid: "io.picolabs.test-error-messages",
+                    name: "somethingNotDefined",
+                    args: {obj: "Bob"}
+                }, function(err){
+                    t.equals(err + "", "Error: Shared, but not defined: somethingNotDefined");
+                    t.ok(err.notFound);
+                    next();
+                });
+            },
+        ], t.end);
+    });
+});
+

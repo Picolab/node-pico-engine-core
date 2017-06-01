@@ -334,6 +334,11 @@ module.exports = function(conf){
     var runQuery = function(query_orig, callback){
         //ensure that query is not mutated
         var query = _.cloneDeep(query_orig);//TODO optimize
+
+        if(!_.isString(query && query.eci)){
+            return callback(new Error("missing query.eci"));
+        }
+
         var emit = mkCTX({query: query}).emit;
         emit("episode_start");
         emit("debug", "query received: " + query.rid + "/" + query.name);

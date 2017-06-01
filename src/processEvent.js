@@ -73,26 +73,27 @@ var toResponse = function(ctx, type, val){
 };
 
 
-var runEvent = cocb.wrap(function*(scheduled){
+var runRuleBody = cocb.wrap(function*(core, rule_body_fns, scheduled){
+
     var rule = scheduled.rule;
-    var ctx = scheduled.ctx;
-    var core = scheduled.core;
+    var pico_id = scheduled.pico_id;
+    var event = scheduled.event;
 
-    ctx.emit("debug", "rule selected: " + rule.rid + " -> " + rule.name);
-
-    ctx = core.mkCTX({
+    var ctx = core.mkCTX({
         rid: rule.rid,
         rule_name: rule.name,
         scope: rule.scope,
-        pico_id: ctx.pico_id,
-        event: ctx.event,
+        pico_id: pico_id,
+        event: event,
 
-        raiseEvent: ctx.raiseEvent,
-        raiseError: ctx.raiseError,
-        scheduleEvent: ctx.scheduleEvent,
-        addActionResponse: ctx.addActionResponse,
-        stopRulesetExecution: ctx.stopRulesetExecution,
+        raiseEvent: rule_body_fns.raiseEvent,
+        raiseError: rule_body_fns.raiseError,
+        scheduleEvent: rule_body_fns.scheduleEvent,
+        addActionResponse: rule_body_fns.addActionResponse,
+        stopRulesetExecution: rule_body_fns.stopRulesetExecution,
     });
+
+    ctx.emit("debug", "rule selected: " + rule.rid + " -> " + rule.name);
 
     yield runKRL(rule.body, ctx, runAction, _.toPairs);
 });
@@ -100,16 +101,19 @@ var runEvent = cocb.wrap(function*(scheduled){
 var processEvent = cocb.wrap(function*(core, ctx){
     ctx.emit("debug", "event being processed");
 
+    //the schedule is the list of rules and events that need to be processed
     var schedule = [];
-    var scheduleEventRAW = function(ctx, callback){
+    var responses = [];//i.e. directives
+
+    var addEventToSchedule = function(ctx, callback){
         selectRulesToEval(core, ctx, function(err, rules){
             if(err) return callback(err);
             _.each(rules, function(rule){
                 ctx.emit("debug", "rule added to schedule: " + rule.rid + " -> " + rule.name);
                 schedule.push({
-                    ctx: ctx,
                     rule: rule,
-                    core: core,
+                    event: ctx.event,
+                    pico_id: ctx.pico_id,
                 });
             });
             if(schedule.length === 0){
@@ -119,11 +123,10 @@ var processEvent = cocb.wrap(function*(core, ctx){
         });
     };
 
-    var responses = [];
+    yield cocb.toYieldable(addEventToSchedule)(ctx);
 
-    ctx = core.mkCTX({
-        event: ctx.event,
-        pico_id: ctx.pico_id,
+    //these are special functions only to be used inside a rule body
+    var rule_body_fns = {
         raiseEvent: cocb.toYieldable(function(revent, callback){
             //shape the revent like a normal event
             var event = {
@@ -139,14 +142,9 @@ var processEvent = cocb.wrap(function*(core, ctx){
             var raise_ctx = core.mkCTX({
                 event: event,
                 pico_id: ctx.pico_id,//raise event is always to the same pico
-                raiseEvent: ctx.raiseEvent,
-                raiseError: ctx.raiseError,
-                scheduleEvent: ctx.scheduleEvent,
-                addActionResponse: ctx.addActionResponse,
-                stopRulesetExecution: ctx.stopRulesetExecution,
             });
             raise_ctx.emit("debug", "adding raised event to schedule: " + revent.domain + "/" + revent.type);
-            scheduleEventRAW(raise_ctx, callback);
+            addEventToSchedule(raise_ctx, callback);
         }),
         raiseError: function*(ctx, level, msg){
 
@@ -187,14 +185,12 @@ var processEvent = cocb.wrap(function*(core, ctx){
             ctx.emit("debug", "`last` control statement is stopping ruleset execution");
             schedule = [];
         },
-    });
-
-    yield cocb.toYieldable(scheduleEventRAW)(ctx);
+    };
 
     //using a while loop b/c schedule is MUTABLE
     //Durring execution new events may be `raised` that will mutate the schedule
     while(schedule.length > 0){
-        yield runEvent(schedule.shift());
+        yield runRuleBody(core, rule_body_fns, schedule.shift());
     }
 
     var res_by_type = _.groupBy(responses, "type");

@@ -73,10 +73,6 @@ var toResponse = function(ctx, type, val){
 };
 
 
-var evalRule = cocb.wrap(function*(ctx, rule){
-    yield runKRL(rule.body, ctx, runAction);
-});
-
 var runEvent = cocb.wrap(function*(scheduled){
     var rule = scheduled.rule;
     var ctx = scheduled.ctx;
@@ -98,24 +94,7 @@ var runEvent = cocb.wrap(function*(scheduled){
         stopRulesetExecution: ctx.stopRulesetExecution,
     });
 
-    if(rule.foreach){
-        yield runKRL(rule.foreach, ctx, function*(val, iter){
-            var counter = _.size(val);
-            var key;
-            for(key in val){
-                if(_.has(val, key)){
-                    counter--;
-                    yield iter(_.assign({}, ctx, {
-                        foreach_is_final: counter === 0
-                    }), [val[key], key, val]);
-                }
-            }
-        }, function*(ctx){
-            yield evalRule(ctx, rule);
-        });
-    }else{
-        yield evalRule(ctx, rule);
-    }
+    yield runKRL(rule.body, ctx, runAction, _.toPairs);
 });
 
 var processEvent = cocb.wrap(function*(core, ctx){

@@ -32,7 +32,11 @@ module.exports = function(core, ctx, callback){
         });
         var val = ctx.scope.get(ctx.query.name);
         if(_.isFunction(val)){
-            return yield runKRL(val, ctx, ctx.query.args);
+            return yield runKRL(function*(ctx, args){
+                //use ctx.applyFn so it behaves like any other fn call
+                //i.e. errors on trying defaction like a function
+                return yield ctx.applyFn(val, ctx, args);
+            }, ctx, ctx.query.args);
         }
         return val;
     }, callback);

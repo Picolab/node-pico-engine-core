@@ -1472,6 +1472,12 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                     next();
                 });
             },
+            function(next){
+                query("echoAction")(function(err){
+                    t.equals(err + "", "Error: actions can only be called in the rule action block");
+                    next();
+                });
+            },
         ], t.end);
     });
 });

@@ -32,6 +32,10 @@ module.exports = function(conf){
                 return;//nothing to schedule
             }
             var onTime = function(){
+                if(most_recent_update_id !== my_update_id){
+                    //schedule is out of date
+                    return;
+                }
                 //run the scheduled task
                 conf.onEvent(next.event, function(err){
                     if(err){

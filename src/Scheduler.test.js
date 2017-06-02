@@ -43,9 +43,8 @@ test("Scheduler - at", function(t){
         onError: function(err){
             log.push(["ERROR", err]);
         },
-        onEvent: function(event, callback){
+        onEvent: function(event){
             log.push(["EVENT", event]);
-            callback();
         },
     });
 
@@ -104,7 +103,7 @@ var randomTick = function(callback){
 
 test("Scheduler - at - generative test", function(t){
 
-    var n_events = 5;
+    var n_events = 50000;
 
     var log = [];
     var event_queue = [];
@@ -154,10 +153,8 @@ test("Scheduler - at - generative test", function(t){
             //this test expects no errors to occur
             t.end(err);
         },
-        onEvent: function(event, callback){
+        onEvent: function(event){
             log.push(event);
-            //randomTick(callback);
-            callback();
         },
     });
     //console.log("update()");

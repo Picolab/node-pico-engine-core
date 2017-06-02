@@ -45,20 +45,17 @@ module.exports = function(conf){
                     //schedule is out of date
                     return;
                 }
-                //run the scheduled task
-                conf.onEvent(next.event, function(err){
-                    if(err){
-                        conf.onError(err);
-                        //handle the error
-                        //but don't stop b/c we want it removed from the schedule
-                    }
-                    pending_at_removes++;
-                    conf.db.removeScheduleEventAt(next.id, next.at, function(err){
-                        pending_at_removes--;
-                        if(err) conf.onError(err);
-                        update();//check the schedule for the next
-                    });
+
+                //remove it, but let the scheduler know that it's pending
+                pending_at_removes++;
+                conf.db.removeScheduleEventAt(next.id, next.at, function(err){
+                    pending_at_removes--;
+                    if(err) conf.onError(err);
+                    update();//check the schedule for the next
                 });
+
+                //emit the scheduled task
+                conf.onEvent(next.event);
             };
 
             if(conf.is_test_mode){
@@ -88,9 +85,7 @@ module.exports = function(conf){
                 cron_by_id[id].job.cancel();//kill this cron so we can start a new on
             }
             var handler = function(){
-                conf.onEvent(event, function(err){
-                    if(err) conf.onError(err);
-                });
+                conf.onEvent(event);
             };
             cron_by_id[id] = {
                 timespec: timespec,

@@ -29,7 +29,7 @@
   "devDependencies": {
     "eslint": "^3.0.1",
     "faucet": "^0.0.1",
-    "krl-compiler": "^0.34.1",
+    "krl-compiler": "^0.35.0",
     "memdown": "^1.2.0",
     "onchange": "^3.0.0",
     "tape": "^4.6.0"

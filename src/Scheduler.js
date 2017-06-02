@@ -17,10 +17,15 @@ module.exports = function(conf){
         curr_timeout = null;
     };
 
+    var pending_at_removes = 0;
+
     /**
      * call update everytime the schedule in the db changes
      */
     var update = function update(){
+        if(pending_at_removes !== 0){
+            return;//remove will call update() when it's done
+        }
         var my_update_id = cuid();
         most_recent_update_id = my_update_id;
         conf.db.nextScheduleEventAt(function(err, next){
@@ -47,7 +52,9 @@ module.exports = function(conf){
                         //handle the error
                         //but don't stop b/c we want it removed from the schedule
                     }
+                    pending_at_removes++;
                     conf.db.removeScheduleEventAt(next.id, next.at, function(err){
+                        pending_at_removes--;
                         if(err) conf.onError(err);
                         update();//check the schedule for the next
                     });

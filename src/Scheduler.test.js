@@ -8,9 +8,12 @@ test("Scheduler - at", function(t){
     var queue_nextEventAt = [];
     var queue_removeEventAt = [];
 
-    var popNextEventAt = function(id){
+    var popNextEventAt = function(id, ignore_if_empty){
         //pop off the oldest callback
         var callback = queue_nextEventAt.shift();
+        if(ignore_if_empty && !callback){
+            return;
+        }
         if(!id){
             return callback();
         }
@@ -64,12 +67,11 @@ test("Scheduler - at", function(t){
     sch.test_mode_triggerTimeout();
     //notice "foo" has not be removed from the db yet
     sch.update();
-    popNextEventAt("foo");//"foo" is still in the db, so naturally it will apear here
+    popNextEventAt("foo", true);//"foo" is still in the db, so naturally it will apear here
     sch.test_mode_triggerTimeout();
     popRemoveEventAt();
-    popRemoveEventAt();
-    popNextEventAt(null);
-    popNextEventAt(null);
+    popNextEventAt(null, true);
+    popNextEventAt(null, true);
 
     t.deepEquals(log, [["EVENT", "foo"]], "the event should only fire once!");
 

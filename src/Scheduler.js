@@ -9,6 +9,14 @@ module.exports = function(conf){
     var cron_by_id = {};
     var most_recent_update_id;
 
+
+    var clearCurrTimeout = function(){
+        if(curr_timeout && !conf.is_test_mode){
+            lt.clearTimeout(curr_timeout);
+        }
+        curr_timeout = null;
+    };
+
     /**
      * call update everytime the schedule in the db changes
      */
@@ -20,18 +28,14 @@ module.exports = function(conf){
                 //schedule is out of date
                 return;
             }
-            if(curr_timeout){
-                //always clear the timeout since we're about to re-schedule it
-                if(!conf.is_test_mode){
-                    lt.clearTimeout(curr_timeout);
-                }
-                curr_timeout = null;
-            }
+            //always clear the timeout since we're about to re-schedule it
+            clearCurrTimeout();
             if(err) return conf.onError(err);
             if(!next){
                 return;//nothing to schedule
             }
             var onTime = function(){
+                clearCurrTimeout();//mostly for testing, but also to be certain
                 if(most_recent_update_id !== my_update_id){
                     //schedule is out of date
                     return;

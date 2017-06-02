@@ -6,6 +6,7 @@ test("Scheduler - at", function(t){
 
     var log = [];
     var queue_nextEventAt = [];
+    var queue_removeEventAt = [];
 
     var popNextEventAt = function(id){
         //pop off the oldest callback
@@ -20,6 +21,12 @@ test("Scheduler - at", function(t){
         });
     };
 
+    var popRemoveEventAt = function(){
+        //pop off the oldest callback
+        var callback = queue_removeEventAt.shift();
+        callback();
+    };
+
     var sch = Scheduler({
         is_test_mode: true,
         db: {
@@ -27,7 +34,7 @@ test("Scheduler - at", function(t){
                 queue_nextEventAt.push(callback);
             },
             removeScheduleEventAt: function(id, at, callback){
-                callback();
+                queue_removeEventAt.push(callback);
             },
         },
         onError: function(err){
@@ -45,21 +52,30 @@ test("Scheduler - at", function(t){
     sch.test_mode_triggerTimeout();
     popNextEventAt("1");
     sch.test_mode_triggerTimeout();
+    popRemoveEventAt();
+    popNextEventAt(null);
 
-    t.deepEquals(log, [
-        //the event should only fire once!
-        ["EVENT", "1"],
-    ]);
+    t.deepEquals(log, [["EVENT", "1"]], "the event should only fire once!");
 
-    t.equals(queue_nextEventAt.length, 1);
-    popNextEventAt("2");
-    t.equals(queue_nextEventAt.length, 0);
+    log = [];
+
+    sch.update();
+    popNextEventAt("foo");
     sch.test_mode_triggerTimeout();
+    //notice "foo" has not be removed from the db yet
+    sch.update();
+    popNextEventAt("foo");//"foo" is still in the db, so naturally it will apear here
+    sch.test_mode_triggerTimeout();
+    popRemoveEventAt();
+    popRemoveEventAt();
+    popNextEventAt(null);
+    popNextEventAt(null);
 
-    t.deepEquals(log, [
-        ["EVENT", "1"],
-        ["EVENT", "2"],
-    ]);
+    t.deepEquals(log, [["EVENT", "foo"]], "the event should only fire once!");
+
+
+    t.equals(queue_nextEventAt.length, 0, "should be no outstanding nextEventAt callbacks");
+    t.equals(queue_removeEventAt.length, 0, "should be no outstanding removeEventAt callbacks");
 
     t.end();
 });
@@ -86,7 +102,7 @@ var randomTick = function(callback){
 
 test("Scheduler - at - generative test", function(t){
 
-    var n_events = 100;
+    var n_events = 5;
 
     var log = [];
     var event_queue = [];
@@ -97,6 +113,7 @@ test("Scheduler - at - generative test", function(t){
             nextScheduleEventAt: function(callback){
                 randomTick(function(){
                     if(event_queue.length === 0){
+                        //console.log("popNextEventAt(null)");
                         return callback();
                     }
                     //read the next event to run, then tick again
@@ -107,8 +124,10 @@ test("Scheduler - at - generative test", function(t){
                         event: id,//shape doesn't matter for this test
                     };
                     randomTick(function(){
+                        //console.log("popNextEventAt(", id, ")");
                         callback(null, next);
                         nTicks(_.random(1, 4), function(){
+                            //console.log("test_mode_triggerTimeout()");
                             sch.test_mode_triggerTimeout();
                         });
                     });
@@ -117,14 +136,15 @@ test("Scheduler - at - generative test", function(t){
             removeScheduleEventAt: function(id, at, callback){
                 randomTick(function(){
                     _.pull(event_queue, id);
-                    if(id === n_events){
+                    randomTick(function(){
+                        //console.log("popRemoveEventAt()", id);
                         callback();
-                        process.nextTick(function(){
-                            onDone();
-                        });
-                    }else{
-                        randomTick(callback);
-                    }
+                        if(id === n_events){
+                            process.nextTick(function(){
+                                onDone();
+                            });
+                        }
+                    });
                 });
             },
         },
@@ -138,6 +158,7 @@ test("Scheduler - at - generative test", function(t){
             callback();
         },
     });
+    //console.log("update()");
     sch.update();
 
     var event_i = 0;
@@ -149,6 +170,7 @@ test("Scheduler - at - generative test", function(t){
         randomTick(function(){
             event_i++;
             event_queue.push(event_i);
+            //console.log("update()");
             sch.update();
             tickLoop();
         });

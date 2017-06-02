@@ -296,6 +296,10 @@ module.exports = function(conf){
             //validate + normalize event, and make sure is not mutated
             event = cleanEvent(event_orig);
         }catch(err){
+            if(!_.isFunction(callback)){
+                emitter.emit("error", {}, err);
+                return;
+            }
             return callback(err);
         }
 

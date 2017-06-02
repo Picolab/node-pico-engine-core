@@ -414,10 +414,8 @@ module.exports = function(conf){
             var info = {scheduler: true};
             emitter.emit("error", info, err);
         },
-        onEvent: function(event, callback){
+        onEvent: function(event){
             signalEvent(event);
-            //signal event then immediately continue on so schedule doesn't block
-            callback();
         },
         is_test_mode: !!conf.___core_testing_mode,
     });

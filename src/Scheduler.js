@@ -9,10 +9,23 @@ module.exports = function(conf){
     var cron_by_id = {};
     var most_recent_update_id;
 
+
+    var clearCurrTimeout = function(){
+        if(curr_timeout && !conf.is_test_mode){
+            lt.clearTimeout(curr_timeout);
+        }
+        curr_timeout = null;
+    };
+
+    var pending_at_removes = 0;
+
     /**
      * call update everytime the schedule in the db changes
      */
     var update = function update(){
+        if(pending_at_removes !== 0){
+            return;//remove will call update() when it's done
+        }
         var my_update_id = cuid();
         most_recent_update_id = my_update_id;
         conf.db.nextScheduleEventAt(function(err, next){
@@ -20,34 +33,29 @@ module.exports = function(conf){
                 //schedule is out of date
                 return;
             }
-            if(curr_timeout){
-                //always clear the timeout since we're about to re-schedule it
-                if(!conf.is_test_mode){
-                    lt.clearTimeout(curr_timeout);
-                }
-                curr_timeout = null;
-            }
+            //always clear the timeout since we're about to re-schedule it
+            clearCurrTimeout();
             if(err) return conf.onError(err);
             if(!next){
                 return;//nothing to schedule
             }
             var onTime = function(){
+                clearCurrTimeout();//mostly for testing, but also to be certain
                 if(most_recent_update_id !== my_update_id){
                     //schedule is out of date
                     return;
                 }
-                //run the scheduled task
-                conf.onEvent(next.event, function(err){
-                    if(err){
-                        conf.onError(err);
-                        //handle the error
-                        //but don't stop b/c we want it removed from the schedule
-                    }
-                    conf.db.removeScheduleEventAt(next.id, next.at, function(err){
-                        if(err) conf.onError(err);
-                        update();//check the schedule for the next
-                    });
+
+                //remove it, but let the scheduler know that it's pending
+                pending_at_removes++;
+                conf.db.removeScheduleEventAt(next.id, next.at, function(err){
+                    pending_at_removes--;
+                    if(err) conf.onError(err);
+                    update();//check the schedule for the next
                 });
+
+                //emit the scheduled task
+                conf.onEvent(next.event);
             };
 
             if(conf.is_test_mode){
@@ -77,9 +85,7 @@ module.exports = function(conf){
                 cron_by_id[id].job.cancel();//kill this cron so we can start a new on
             }
             var handler = function(){
-                conf.onEvent(event, function(err){
-                    if(err) conf.onError(err);
-                });
+                conf.onEvent(event);
             };
             cron_by_id[id] = {
                 timespec: timespec,

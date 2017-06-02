@@ -16,6 +16,10 @@ module.exports = function(conf){
         var my_update_id = cuid();
         most_recent_update_id = my_update_id;
         conf.db.nextScheduleEventAt(function(err, next){
+            if(most_recent_update_id !== my_update_id){
+                //schedule is out of date
+                return;
+            }
             if(curr_timeout){
                 //always clear the timeout since we're about to re-schedule it
                 if(!conf.is_test_mode){
@@ -28,9 +32,6 @@ module.exports = function(conf){
                 return;//nothing to schedule
             }
             var onTime = function(){
-                if(most_recent_update_id !== my_update_id){
-                    return;
-                }
                 //run the scheduled task
                 conf.onEvent(next.event, function(err){
                     if(err){

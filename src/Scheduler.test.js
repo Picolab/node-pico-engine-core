@@ -43,8 +43,18 @@ test("Scheduler - at", function(t){
     sch.test_mode_triggerTimeout();
 
     t.deepEquals(log, [
-        //the event should only be scheduled once!
+        //the event should only fire once!
         ["EVENT", "1"],
+    ]);
+
+    t.equals(queue_nextEventAt.length, 1);
+    popNextEventAt("2");
+    t.equals(queue_nextEventAt.length, 0);
+    sch.test_mode_triggerTimeout();
+
+    t.deepEquals(log, [
+        ["EVENT", "1"],
+        ["EVENT", "2"],
     ]);
 
     t.end();

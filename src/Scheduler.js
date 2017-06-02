@@ -1,16 +1,20 @@
 var _ = require("lodash");
 var lt = require("long-timeout");//makes it possible to have a timeout longer than 24.8 days (2^31-1 milliseconds)
+var cuid = require("cuid");
 var schedule = require("node-schedule");
 
 module.exports = function(conf){
 
     var curr_timeout;
     var cron_by_id = {};
+    var most_recent_update_id;
 
     /**
      * call update everytime the schedule in the db changes
      */
     var update = function update(){
+        var my_update_id = cuid();
+        most_recent_update_id = my_update_id;
         conf.db.nextScheduleEventAt(function(err, next){
             if(curr_timeout){
                 //always clear the timeout since we're about to re-schedule it
@@ -24,6 +28,9 @@ module.exports = function(conf){
                 return;//nothing to schedule
             }
             var onTime = function(){
+                if(most_recent_update_id !== my_update_id){
+                    return;
+                }
                 //run the scheduled task
                 conf.onEvent(next.event, function(err){
                     if(err){

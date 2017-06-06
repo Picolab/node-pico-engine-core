@@ -270,16 +270,7 @@ module.exports = function(conf){
             processEvent(core, mkCTX({
                 event: event,
                 pico_id: pico_id
-            }), function(err, data){
-                if(err) return callback(err);
-                if(_.has(data, "event:send")){
-                    _.each(data["event:send"], function(o){
-                        signalEvent(o.event);
-                    });
-                    data = _.omit(data, "event:send");
-                }
-                callback(void 0, data);
-            });
+            }), callback);
         }else if(data.type === "query"){
             processQuery(core, mkCTX({
                 query: data.query,
@@ -330,7 +321,16 @@ module.exports = function(conf){
             picoQ.enqueue(pico_id, {
                 type: "event",
                 event: event
-            }, callback);
+            }, function(err, data){
+                if(!err && _.has(data, "event:send")){
+                    _.each(data["event:send"], function(o){
+                        signalEvent(o.event);
+                    });
+                    data = _.omit(data, "event:send");
+                }
+                emit("episode_stop");
+                callback(err, data);
+            });
             emit("debug", "event added to pico queue: " + pico_id);
         });
     };

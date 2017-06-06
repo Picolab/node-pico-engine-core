@@ -213,7 +213,6 @@ var processEvent = cocb.wrap(function*(core, ctx){
     }
 
     ctx.emit("debug", "event finished processing");
-    ctx.emit("episode_stop");
 
     return r;
 });

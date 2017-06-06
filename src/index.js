@@ -281,7 +281,7 @@ module.exports = function(conf){
         }
     });
 
-    var signalEvent = function(event_orig, callback){
+    core.signalEvent = function(event_orig, callback){
         var event;
         try{
             //validate + normalize event, and make sure is not mutated
@@ -322,12 +322,6 @@ module.exports = function(conf){
                 type: "event",
                 event: event
             }, function(err, data){
-                if(!err && _.has(data, "event:send")){
-                    _.each(data["event:send"], function(o){
-                        signalEvent(o.event);
-                    });
-                    data = _.omit(data, "event:send");
-                }
                 emit("episode_stop");
                 callback(err, data);
             });
@@ -335,7 +329,7 @@ module.exports = function(conf){
         });
     };
 
-    var runQuery = function(query_orig, callback){
+    core.runQuery = function(query_orig, callback){
         //ensure that query is not mutated
         var query = _.cloneDeep(query_orig);//TODO optimize
 
@@ -415,7 +409,7 @@ module.exports = function(conf){
             emitter.emit("error", info, err);
         },
         onEvent: function(event){
-            signalEvent(event);
+            core.signalEvent(event);
         },
         is_test_mode: !!conf.___core_testing_mode,
     });
@@ -477,8 +471,8 @@ module.exports = function(conf){
     var pe = {
         emitter: emitter,
 
-        signalEvent: signalEvent,
-        runQuery: runQuery,
+        signalEvent: core.signalEvent,
+        runQuery: core.runQuery,
 
         registerRuleset: core.registerRuleset,
         registerRulesetURL: core.registerRulesetURL,

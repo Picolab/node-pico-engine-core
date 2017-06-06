@@ -126,7 +126,9 @@ module.exports = function(conf){
                 }
             }
             if(type === "error"){
-                emitter.emit(type, val, info, message);
+                //the Error object, val, should be first
+                // b/c node "error" event conventions, so you don't strange messages thinking `info` is the error
+                emitter.emit("error", val, info, message);
             }else{
                 emitter.emit(type, info, val, message);
             }

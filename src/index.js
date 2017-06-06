@@ -267,28 +267,29 @@ module.exports = function(conf){
         });
     };
 
-    var picoQ = PicoQueue(function(pico_id, data, callback){
-        if(data.type === "event"){
-            var event = data.event;
+    var picoQ = PicoQueue(function(pico_id, job, callback){
+        //now handle the next `job` on the pico queue
+        if(job.type === "event"){
+            var event = job.event;
             event.timestamp = new Date(event.timestamp);//convert from JSON string to date
             processEvent(core, mkCTX({
                 event: event,
                 pico_id: pico_id
             }), callback);
-        }else if(data.type === "query"){
+        }else if(job.type === "query"){
             processQuery(core, mkCTX({
-                query: data.query,
+                query: job.query,
                 pico_id: pico_id
             }), callback);
         }else{
-            callback(new Error("invalid PicoQueue type:" + data.type));
+            callback(new Error("invalid PicoQueue job.type:" + job.type));
         }
     });
 
-    var enqueueForECI = function(eci, data, onEnqueued, callback){
+    var enqueueForECI = function(eci, job, onEnqueued, callback){
         db.getPicoIDByECI(eci, function(err, pico_id){
             if(err) return callback(err);
-            picoQ.enqueue(pico_id, data, callback);
+            picoQ.enqueue(pico_id, job, callback);
             onEnqueued(pico_id);
         });
     };

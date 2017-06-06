@@ -116,6 +116,9 @@ test("PicoEngine - hello_world ruleset", function(t){
         }, function(err, data){
             if(err) return t.end(err);
 
+            var txn_path = ["directives", 0, "meta", "txn_id"];
+            t.ok(/^c[^\s]+$/.test(_.get(data.hello_event, txn_path)));
+            _.set(data.hello_event, txn_path, "TXN_ID");
             t.deepEquals(data.hello_event, {
                 directives: [
                     {
@@ -127,7 +130,7 @@ test("PicoEngine - hello_world ruleset", function(t){
                             eid: "1234",
                             rid: "io.picolabs.hello_world",
                             rule_name: "say_hello",
-                            txn_id: "TODO"
+                            txn_id: "TXN_ID"
                         }
                     }
                 ]
@@ -1418,10 +1421,20 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                 signal("defa", "bar_setting", {}),
                 [{name: "bar", options: {a: "baz", b: "qux", c: "quux"}}]
             ],
-            [
-                query("getSettingVal"),
-                {name: "bar", type: "directive", options: {a: "baz", b: "qux", c: "quux"},  meta: {eid: "1234", rid: "io.picolabs.defaction", rule_name: "bar_setting", txn_id: "TODO"}}
-            ],
+            function(next){
+                query("getSettingVal")(function(err, data){
+                    if(err) return next(err);
+
+                    data.meta.txn_id = "TXN_ID";
+                    t.deepEquals(data, {
+                        name: "bar",
+                        type: "directive",
+                        options: {a: "baz", b: "qux", c: "quux"},
+                        meta: {eid: "1234", rid: "io.picolabs.defaction", rule_name: "bar_setting", txn_id: "TXN_ID"},
+                    });
+                    next();
+                });
+            },
             [
                 signal("defa", "chooser", {val: "asdf"}),
                 [{name: "foo", options: {a: "asdf", b: 5}}]

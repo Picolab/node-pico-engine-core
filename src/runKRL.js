@@ -5,6 +5,7 @@ var assertCTX_keys = function(ctx, keys){
     var std_ctx_keys = [
         "rid",
         "scope",
+        "txn_id",
         "getMyKey",
         "modules",
         "KRLClosure",

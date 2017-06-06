@@ -1,4 +1,5 @@
 var _ = require("lodash");
+var cuid = require("cuid");
 var cocb = require("co-callback");
 var runKRL = require("./runKRL");
 var runAction = require("./runAction");
@@ -58,7 +59,7 @@ var toResponse = function(ctx, type, val){
             meta: {
                 rid: ctx.rid,
                 rule_name: ctx.rule_name,
-                txn_id: "TODO",//TODO transactions
+                txn_id: ctx.txn_id,
                 eid: ctx.event.eid
             }
         };
@@ -136,6 +137,7 @@ var processEvent = cocb.wrap(function*(core, ctx){
                 type: revent.type,
                 attrs: revent.attributes,
                 for_rid: revent.for_rid,
+                txn_id: cuid(),
                 timestamp: new Date()
             };
             //must make a new ctx for this raise b/c it's a different event

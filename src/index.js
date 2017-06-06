@@ -63,6 +63,13 @@ module.exports = function(conf){
             };
         }(ctx.rid));//pass in the rid at mkCTX creation so it is not later mutated
 
+        if(ctx.event){
+            ctx.txn_id = ctx.event.txn_id;
+        }
+        if(ctx.query){
+            ctx.txn_id = ctx.query.txn_id;
+        }
+
         ctx.modules = modules;
         ctx.applyFn = applyFn;
         var pushCTXScope = function(ctx2){
@@ -316,6 +323,8 @@ module.exports = function(conf){
             ? event_orig.timestamp
             : new Date();
 
+        event.txn_id = cuid();
+
         var emit = mkCTX({event: event}).emit;
         emit("episode_start");
         emit("debug", "event received: " + event.domain + "/" + event.type);
@@ -353,6 +362,9 @@ module.exports = function(conf){
             callback(err);
             return;
         }
+
+        query.timestamp = new Date();
+        query.txn_id = cuid();
 
         var emit = mkCTX({query: query}).emit;
         emit("episode_start");

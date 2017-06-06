@@ -324,6 +324,10 @@ module.exports = function(conf){
             type: "event",
             event: event
         }, function(pico_id){
+            emit = mkCTX({
+                event: event,
+                pico_id: pico_id,
+            }).emit;
             emit("debug", "event added to pico queue: " + pico_id);
         }, function(err, data){
             if(err){
@@ -358,6 +362,10 @@ module.exports = function(conf){
             type: "query",
             query: query
         }, function(pico_id){
+            emit = mkCTX({
+                query: query,
+                pico_id: pico_id,
+            }).emit;
             emit("debug", "query added to pico queue: " + pico_id);
         }, function(err, data){
             if(err){

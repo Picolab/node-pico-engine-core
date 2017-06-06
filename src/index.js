@@ -293,16 +293,15 @@ module.exports = function(conf){
         });
     };
 
-    core.signalEvent = function(event_orig, callback){
+    core.signalEvent = function(event_orig, callback_orig){
+        var callback = _.isFunction(callback_orig) ? callback_orig : _.noop;
         var event;
         try{
             //validate + normalize event, and make sure is not mutated
             event = cleanEvent(event_orig);
         }catch(err){
             emitter.emit("error", err);
-            if(_.isFunction(callback)){
-                callback(err);
-            }
+            callback(err);
             return;
         }
 
@@ -326,29 +325,24 @@ module.exports = function(conf){
             if(err){
                 emit("error", err);
             }else{
-                if(!_.isFunction(callback)){
-                    //if interal signalEvent or just no callback was given...
-                    emit("debug", data);
-                }
+                emit("debug", data);
             }
             //there should be no more emits after "episode_stop"
             emit("episode_stop");
-            if(_.isFunction(callback)){
-                callback(err, data);
-            }
+            callback(err, data);
         });
     };
 
-    core.runQuery = function(query_orig, callback){
+    core.runQuery = function(query_orig, callback_orig){
+        var callback = _.isFunction(callback_orig) ? callback_orig : _.noop;
+
         //ensure that query is not mutated
         var query = _.cloneDeep(query_orig);//TODO optimize
 
         if(!_.isString(query && query.eci)){
             var err = new Error("missing query.eci");
             emitter.emit("error", err);
-            if(_.isFunction(callback)){
-                callback(err);
-            }
+            callback(err);
             return;
         }
 
@@ -365,16 +359,11 @@ module.exports = function(conf){
             if(err){
                 emit("error", err);
             }else{
-                if(!_.isFunction(callback)){
-                    //if interal signalEvent or just no callback was given...
-                    emit("debug", data);
-                }
+                emit("debug", data);
             }
             //there should be no more emits after "episode_stop"
             emit("episode_stop");
-            if(_.isFunction(callback)){
-                callback(err, data);
-            }
+            callback(err, data);
         });
     };
 

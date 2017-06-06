@@ -285,18 +285,25 @@ module.exports = function(conf){
         }
     });
 
+    var enqueueForECI = function(eci, data, onEnqueued, callback){
+        db.getPicoIDByECI(eci, function(err, pico_id){
+            if(err) return callback(err);
+            picoQ.enqueue(pico_id, data, callback);
+            onEnqueued(pico_id);
+        });
+    };
+
     core.signalEvent = function(event_orig, callback){
         var event;
         try{
             //validate + normalize event, and make sure is not mutated
             event = cleanEvent(event_orig);
         }catch(err){
-            if(!_.isFunction(callback)){
-                //if interal signalEvent or just no callback was given...
-                emitter.emit("error", err);
-                return;
+            emitter.emit("error", err);
+            if(_.isFunction(callback)){
+                callback(err);
             }
-            return callback(err);
+            return;
         }
 
         if(event.eid === "none"){
@@ -310,31 +317,25 @@ module.exports = function(conf){
         emit("episode_start");
         emit("debug", "event received: " + event.domain + "/" + event.type);
 
-        db.getPicoIDByECI(event.eci, function(err, pico_id){
+        enqueueForECI(event.eci, {
+            type: "event",
+            event: event
+        }, function(pico_id){
+            emit("debug", "event added to pico queue: " + pico_id);
+        }, function(err, data){
             if(err){
                 emit("error", err);
-                emit("episode_stop");
-                if(_.isFunction(callback)){
-                    callback(err);
-                }
-                return;
-            }
-            picoQ.enqueue(pico_id, {
-                type: "event",
-                event: event
-            }, function(err, data){
+            }else{
                 if(!_.isFunction(callback)){
                     //if interal signalEvent or just no callback was given...
-                    if(!err) emit("debug", data);
+                    emit("debug", data);
                 }
-                if(err) emit("error", err);
-                //there should be no more emits after "episode_stop"
-                emit("episode_stop");
-                if(_.isFunction(callback)){
-                    callback(err, data);
-                }
-            });
-            emit("debug", "event added to pico queue: " + pico_id);
+            }
+            //there should be no more emits after "episode_stop"
+            emit("episode_stop");
+            if(_.isFunction(callback)){
+                callback(err, data);
+            }
         });
     };
 
@@ -343,27 +344,37 @@ module.exports = function(conf){
         var query = _.cloneDeep(query_orig);//TODO optimize
 
         if(!_.isString(query && query.eci)){
-            return callback(new Error("missing query.eci"));
+            var err = new Error("missing query.eci");
+            emitter.emit("error", err);
+            if(_.isFunction(callback)){
+                callback(err);
+            }
+            return;
         }
 
         var emit = mkCTX({query: query}).emit;
         emit("episode_start");
         emit("debug", "query received: " + query.rid + "/" + query.name);
 
-        db.getPicoIDByECI(query.eci, function(err, pico_id){
-            if(err) return callback(err);
-            var emit = mkCTX({
-                query: query,
-                pico_id: pico_id,
-            }).emit;
-            picoQ.enqueue(pico_id, {
-                type: "query",
-                query: query
-            }, function(err, data){
-                emit("episode_stop");
-                callback(err, data);
-            });
+        enqueueForECI(query.eci, {
+            type: "query",
+            query: query
+        }, function(pico_id){
             emit("debug", "query added to pico queue: " + pico_id);
+        }, function(err, data){
+            if(err){
+                emit("error", err);
+            }else{
+                if(!_.isFunction(callback)){
+                    //if interal signalEvent or just no callback was given...
+                    emit("debug", data);
+                }
+            }
+            //there should be no more emits after "episode_stop"
+            emit("episode_stop");
+            if(_.isFunction(callback)){
+                callback(err, data);
+            }
         });
     };
 

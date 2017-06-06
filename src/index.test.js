@@ -104,6 +104,9 @@ test("PicoEngine - hello_world ruleset", function(t){
             }),
 
             error_event: function(next){
+                pe.emitter.once("error", function(err){
+                    t.equals(err+"", "Error: missing event.eci");
+                });
                 pe.signalEvent({}, function(err){
                     t.equals(err + "", "Error: missing event.eci");
                     next();
@@ -1542,6 +1545,9 @@ test("PicoEngine - io.picolabs.key* rulesets", function(t){
 
         var qError = function(q, error_msg){
             return function(next){
+                pe.emitter.once("error", function(err){
+                    t.equals(err+"", error_msg);
+                });
                 q(function(err, resp){
                     t.equals(err+"", error_msg);
                     next();
@@ -1971,67 +1977,49 @@ test("PicoEngine - io.picolabs.test-error-messages", function(t){
     mkTestPicoEngine({}, function(err, pe){
         if(err)return t.end(err);
 
+        var qError = function(q, error_msg, is_notFound){
+            return function(next){
+                pe.emitter.once("error", function(err){
+                    t.equals(err+"", error_msg);
+                    t.equals(err.notFound || false, is_notFound);
+                });
+                pe.runQuery(q, function(err, resp){
+                    t.equals(err+"", error_msg);
+                    t.equals(err.notFound || false, is_notFound);
+                    t.notOk(resp);
+                    next();
+                });
+            };
+        };
+
         λ.series([
             λ.curry(pe.newPico, {}),
             λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
             λ.curry(pe.installRuleset, "id0", "io.picolabs.test-error-messages"),
 
-            function(next){
-                pe.runQuery(void 0, function(err){
-                    t.equals(err + "", "Error: missing query.eci");
-                    t.notOk(err.notFound);
-                    next();
-                });
-            },
-            function(next){
-                pe.runQuery({eci: null}, function(err){
-                    t.equals(err + "", "Error: missing query.eci");
-                    t.notOk(err.notFound);
-                    next();
-                });
-            },
-            function(next){
-                pe.runQuery({eci: "foo"}, function(err){
-                    t.equals(err + "", "NotFoundError: ECI not found: foo");
-                    t.ok(err.notFound);
-                    next();
-                });
-            },
-            function(next){
-                pe.runQuery({
-                    eci: "id1",
-                    rid: "not-an-rid",
-                    name: "hello",
-                    args: {obj: "Bob"}
-                }, function(err){
-                    t.equals(err + "", "Error: Pico does not have that rid: not-an-rid");
-                    next();
-                });
-            },
-            function(next){
-                pe.runQuery({
-                    eci: "id1",
-                    rid: "io.picolabs.test-error-messages",
-                    name: "zzz",
-                    args: {obj: "Bob"}
-                }, function(err){
-                    t.equals(err + "", "Error: Not shared: zzz");
-                    t.notOk(err.notFound);
-                    next();
-                });
-            },
-            function(next){
-                pe.runQuery({
-                    eci: "id1",
-                    rid: "io.picolabs.test-error-messages",
-                    name: "somethingNotDefined",
-                    args: {obj: "Bob"}
-                }, function(err){
-                    t.equals(err + "", "Error: Shared, but not defined: somethingNotDefined");
-                    t.ok(err.notFound);
-                    next();
-                });
-            },
+            qError(void 0, "Error: missing query.eci", false),
+
+            qError({eci: null}, "Error: missing query.eci", false),
+
+            qError({eci: "foo"}, "NotFoundError: ECI not found: foo", true),
+            qError({
+                eci: "id1",
+                rid: "not-an-rid",
+                name: "hello",
+                args: {obj: "Bob"}
+            }, "Error: Pico does not have that rid: not-an-rid", false),
+            qError({
+                eci: "id1",
+                rid: "io.picolabs.test-error-messages",
+                name: "zzz",
+                args: {obj: "Bob"}
+            }, "Error: Not shared: zzz", false),
+            qError({
+                eci: "id1",
+                rid: "io.picolabs.test-error-messages",
+                name: "somethingNotDefined",
+                args: {obj: "Bob"}
+            }, "Error: Shared, but not defined: somethingNotDefined", true),
         ], t.end);
     });
 });

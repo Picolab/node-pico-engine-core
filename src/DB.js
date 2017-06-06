@@ -311,7 +311,10 @@ module.exports = function(opts){
             }
             ldb.batch(ops, function(err){
                 if(err) return callback(err);
-                callback(undefined, hash);
+                callback(undefined, {
+                    rid: rid,
+                    hash: hash,
+                });
             });
         },
         hasEnabledRid: function(rid, callback){

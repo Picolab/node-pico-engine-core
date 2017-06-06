@@ -246,14 +246,15 @@ module.exports = function(conf){
     };
 
     core.registerRuleset = function(krl_src, meta_data, callback){
-        db.storeRuleset(krl_src, meta_data, function(err, hash){
+        db.storeRuleset(krl_src, meta_data, function(err, data){
             if(err) return callback(err);
             compileAndLoadRuleset({
+                rid: data.rid,
                 src: krl_src,
-                hash: hash
+                hash: data.hash
             }, function(err, rs){
                 if(err) return callback(err);
-                db.enableRuleset(hash, function(err){
+                db.enableRuleset(data.hash, function(err){
                     if(err) return callback(err);
                     initializeAndEngageRuleset(rs, core.rsreg.get, function(err){
                         if(err){
@@ -261,7 +262,7 @@ module.exports = function(conf){
                         }
                         callback(err, {
                             rid: rs.rid,
-                            hash: hash
+                            hash: data.hash
                         });
                     });
                 });

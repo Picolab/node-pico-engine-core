@@ -1444,6 +1444,10 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                 {type: "directive", name: "add", options: {resp: 3}}
             ],
             function(next){
+                pe.emitter.once("error", function(err, info){
+                    t.equals(err + "", "Error: `add` is not defined as an action");
+                    t.equals(info.eci, "id1");
+                });
                 signal("defa", "add")(function(err, resp){
                     t.equals(err + "", "Error: `add` is not defined as an action");
                     t.notOk(resp);
@@ -1467,12 +1471,20 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                 ["aint", "no", "echo", null, "send wat? noop returned: null"]
             ],
             function(next){
+                pe.emitter.once("error", function(err, info){
+                    t.equals(err + "", "Error: actions can only be called in the rule action block");
+                    t.equals(info.eci, "id1");
+                });
                 signal("defa", "trying_to_use_action_as_fn")(function(err){
                     t.equals(err + "", "Error: actions can only be called in the rule action block");
                     next();
                 });
             },
             function(next){
+                pe.emitter.once("error", function(err, info){
+                    t.equals(err + "", "Error: actions can only be called in the rule action block");
+                    t.equals(info.eci, "id1");
+                });
                 query("echoAction")(function(err){
                     t.equals(err + "", "Error: actions can only be called in the rule action block");
                     next();

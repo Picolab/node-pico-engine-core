@@ -125,7 +125,11 @@ module.exports = function(conf){
                     info.eci = ctx.query.eci;
                 }
             }
-            emitter.emit(type, info, val, message);
+            if(type === "error"){
+                emitter.emit(type, val, info, message);
+            }else{
+                emitter.emit(type, info, val, message);
+            }
         };
         ctx.log = function(level, val){
             if(!_.has(log_levels, level)){
@@ -288,7 +292,8 @@ module.exports = function(conf){
             event = cleanEvent(event_orig);
         }catch(err){
             if(!_.isFunction(callback)){
-                emitter.emit("error", {}, err);
+                //if interal signalEvent or just no callback was given...
+                emitter.emit("error", err);
                 return;
             }
             return callback(err);
@@ -305,25 +310,29 @@ module.exports = function(conf){
         emit("episode_start");
         emit("debug", "event received: " + event.domain + "/" + event.type);
 
-        if(!_.isFunction(callback)){
-            //if interal signalEvent or just no callback was given...
-            callback = function(err, resp){
-                if(err){
-                    emit("error", err);
-                }else{
-                    emit("debug", resp);
-                }
-            };
-        }
-
         db.getPicoIDByECI(event.eci, function(err, pico_id){
-            if(err) return callback(err);
+            if(err){
+                emit("error", err);
+                emit("episode_stop");
+                if(_.isFunction(callback)){
+                    callback(err);
+                }
+                return;
+            }
             picoQ.enqueue(pico_id, {
                 type: "event",
                 event: event
             }, function(err, data){
+                if(!_.isFunction(callback)){
+                    //if interal signalEvent or just no callback was given...
+                    if(!err) emit("debug", data);
+                }
+                if(err) emit("error", err);
+                //there should be no more emits after "episode_stop"
                 emit("episode_stop");
-                callback(err, data);
+                if(_.isFunction(callback)){
+                    callback(err, data);
+                }
             });
             emit("debug", "event added to pico queue: " + pico_id);
         });
@@ -406,7 +415,7 @@ module.exports = function(conf){
         db: db,
         onError: function(err){
             var info = {scheduler: true};
-            emitter.emit("error", info, err);
+            emitter.emit("error", err, info);
         },
         onEvent: function(event){
             core.signalEvent(event);

@@ -422,6 +422,10 @@ delegates@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/delegates/-/delegates-1.0.0.tgz#84c6e159b81904fdca59a0ef44cd870d31250f9a"
 
+dependency-resolver@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/dependency-resolver/-/dependency-resolver-2.0.1.tgz#2b010768863e16f2d73e381c9623744a6d8c2a4b"
+
 discontinuous-range@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/discontinuous-range/-/discontinuous-range-1.0.0.tgz#e38331f0844bba49b9a9cb71c771585aab1bc65a"

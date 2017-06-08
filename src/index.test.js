@@ -2065,9 +2065,13 @@ test("PicoEngine - startup ruleset dependency ordering", function(t){
 
     //create a blank engine
     var pe = mkPE();
+    //register some krl that has inter-dependencies
     λ.each.series([
-        "ruleset A {}",
-        "ruleset B {meta{use module A}}",
+        "ruleset D {}",
+        "ruleset E {}",
+        "ruleset C {meta{use module D use module E}}",
+        "ruleset B {meta{use module C use module E}}",
+        "ruleset A {meta{use module B use module D}}",
     ], function(src, next){
         pe.registerRuleset(src, {}, next);
     }, function(err){
@@ -2078,6 +2082,7 @@ test("PicoEngine - startup ruleset dependency ordering", function(t){
         //now the engine shuts down, and starts up again
         pe = mkPE();
         pe.start(function(err){
+            //if the dependencies aren't loaded in the correct order it will blow up
             if(err)return t.end(err);
             t.ok(true, "restarted successfully");
             t.end();

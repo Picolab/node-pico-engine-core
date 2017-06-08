@@ -18,6 +18,7 @@ var EventEmitter = require("events");
 var processEvent = require("./processEvent");
 var processQuery = require("./processQuery");
 var RulesetRegistry = require("./RulesetRegistry");
+var DependencyResolver = require("dependency-resolver");
 
 var applyFn = cocb.wrap(function*(fn, ctx, args){
     if(!_.isFunction(fn)){
@@ -173,7 +174,7 @@ module.exports = function(conf){
     };
     core.mkCTX = mkCTX;
 
-    var initializeRulest = cocb.wrap(function*(rs, loadDepRS){
+    var initializeRulest = cocb.wrap(function*(rs){
         rs.scope = SymbolTable();
         rs.modules_used = {};
         var use_array = _.values(rs.meta && rs.meta.use);
@@ -183,7 +184,7 @@ module.exports = function(conf){
             if(use.kind !== "module"){
                 throw new Error("Unsupported 'use' kind: " + use.kind);
             }
-            dep_rs = loadDepRS(use.rid);
+            dep_rs = core.rsreg.get(use.rid);
             if(!dep_rs){
                 throw new Error("Dependant module not loaded: " + use.rid);
             }
@@ -222,8 +223,8 @@ module.exports = function(conf){
         }
     });
 
-    var initializeAndEngageRuleset = function(rs, loadDepRS, callback){
-        cocb.run(initializeRulest(rs, loadDepRS), function(err){
+    var initializeAndEngageRuleset = function(rs, callback){
+        cocb.run(initializeRulest(rs), function(err){
             if(err) return callback(err);
 
             core.rsreg.put(rs);
@@ -262,7 +263,7 @@ module.exports = function(conf){
                 if(err) return callback(err);
                 db.enableRuleset(data.hash, function(err){
                     if(err) return callback(err);
-                    initializeAndEngageRuleset(rs, core.rsreg.get, function(err){
+                    initializeAndEngageRuleset(rs, function(err){
                         if(err){
                             db.disableRuleset(rs.rid, _.noop);//undo enable if failed
                         }
@@ -393,18 +394,34 @@ module.exports = function(conf){
     var registerAllEnabledRulesets = function(callback){
         db.listAllEnabledRIDs(function(err, rids){
             if(err)return callback(err);
+            if(_.isEmpty(rids)){
+                callback();
+                return;
+            }
             λ.map(rids, getRulesetForRID, function(err, rs_list){
                 if(err)return callback(err);
+
+                var resolver = new DependencyResolver();
+
                 var rs_by_rid = {};
                 _.each(rs_list, function(rs){
                     rs_by_rid[rs.rid] = rs;
+
+                    resolver.add(rs.rid);
+                    _.each(rs.meta && rs.meta.use, function(use){
+                        if(use.kind === "module"){
+                            resolver.setDependency(rs.rid, use.rid);
+                        }
+                    });
                 });
-                var loadDepRS = function(rid){
+
+                //order they need to be loaded in for dependencies to work
+                var rid_order = resolver.sort();
+                rs_list = _.map(rid_order, function(rid){
                     return rs_by_rid[rid];
-                };
-                λ.each.series(rs_list, function(rs, next){
-                    initializeAndEngageRuleset(rs, loadDepRS, next);
-                }, callback);
+                });
+
+                λ.each.series(rs_list, initializeAndEngageRuleset, callback);
             });
         });
     };

@@ -206,7 +206,7 @@ module.exports = function(conf){
             rs.modules_used[use.alias] = {
                 rid: use.rid,
                 scope: ctx2.scope,
-                provides: dep_rs.meta.provides
+                provides: _.get(dep_rs, ["meta", "provides"], []),
             };
             core.rsreg.provideKey(rs.rid, use.rid);
         }

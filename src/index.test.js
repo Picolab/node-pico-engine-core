@@ -2037,3 +2037,50 @@ test("PicoEngine - io.picolabs.test-error-messages", function(t){
     });
 });
 
+test("PicoEngine - startup ruleset dependency ordering", function(t){
+
+    var memdb = memdown(cuid());//db to share between to engine instances
+
+    var mkPE = function(){
+        return PicoEngine({
+            host: "https://test-host",
+            ___core_testing_mode: true,
+            compileAndLoadRuleset: function(rs_info, callback){
+                var js;
+                try{
+                    var js_src = compiler(rs_info.src, {
+                        inline_source_map: true
+                    }).code;
+                    js = eval(js_src);
+                }catch(err){
+                    return callback(err);
+                }
+                callback(null, js);
+            },
+            db: {
+                db: function(){return memdb;},
+            }
+        });
+    };
+
+    //create a blank engine
+    var pe = mkPE();
+    λ.each.series([
+        "ruleset A {}",
+        "ruleset B {meta{use module A}}",
+    ], function(src, next){
+        pe.registerRuleset(src, {}, next);
+    }, function(err){
+        if(err)return t.end(err);
+
+        t.ok(true, "registered the ruleset successfully");
+
+        //now the engine shuts down, and starts up again
+        pe = mkPE();
+        pe.start(function(err){
+            if(err)return t.end(err);
+            t.ok(true, "restarted successfully");
+            t.end();
+        });
+    });
+});

@@ -297,14 +297,6 @@ module.exports = function(conf){
         }
     });
 
-    var enqueueForECI = function(eci, job, onEnqueued, callback){
-        db.getPicoIDByECI(eci, function(err, pico_id){
-            if(err) return callback(err);
-            picoQ.enqueue(pico_id, job, callback);
-            onEnqueued(pico_id);
-        });
-    };
-
     core.signalEvent = function(event_orig, callback_orig){
         var callback = _.isFunction(callback_orig) ? callback_orig : _.noop;
         var event;
@@ -326,28 +318,37 @@ module.exports = function(conf){
 
         event.txn_id = cuid();
 
-        var emit = mkCTX({event: event}).emit;
-        emit("episode_start");
-        emit("debug", "event received: " + event.domain + "/" + event.type);
-
-        enqueueForECI(event.eci, {
-            type: "event",
-            event: event
-        }, function(pico_id){
-            emit = mkCTX({
+        db.getPicoIDByECI(event.eci, function(err, pico_id){
+            if(err){
+                emitter.emit("error", err);
+                callback(err);
+                return;
+            }
+            var emit = mkCTX({
                 event: event,
                 pico_id: pico_id,
             }).emit;
+
+            emit("episode_start");
+            emit("debug", "event received: " + event.domain + "/" + event.type);
+
+            picoQ.enqueue(pico_id, {
+                type: "event",
+                event: event,
+            }, onDone);
+
             emit("debug", "event added to pico queue: " + pico_id);
-        }, function(err, data){
-            if(err){
-                emit("error", err);
-            }else{
-                emit("debug", data);
+
+            function onDone(err, data){
+                if(err){
+                    emit("error", err);
+                }else{
+                    emit("debug", data);
+                }
+                //there should be no more emits after "episode_stop"
+                emit("episode_stop");
+                callback(err, data);
             }
-            //there should be no more emits after "episode_stop"
-            emit("episode_stop");
-            callback(err, data);
         });
     };
 
@@ -367,28 +368,37 @@ module.exports = function(conf){
         query.timestamp = new Date();
         query.txn_id = cuid();
 
-        var emit = mkCTX({query: query}).emit;
-        emit("episode_start");
-        emit("debug", "query received: " + query.rid + "/" + query.name);
+        db.getPicoIDByECI(query.eci, function(err, pico_id){
+            if(err){
+                emitter.emit("error", err);
+                callback(err);
+                return;
+            }
 
-        enqueueForECI(query.eci, {
-            type: "query",
-            query: query
-        }, function(pico_id){
-            emit = mkCTX({
+            var emit = mkCTX({
                 query: query,
                 pico_id: pico_id,
             }).emit;
+            emit("episode_start");
+            emit("debug", "query received: " + query.rid + "/" + query.name);
+
+            picoQ.enqueue(pico_id, {
+                type: "query",
+                query: query
+            }, onDone);
+
             emit("debug", "query added to pico queue: " + pico_id);
-        }, function(err, data){
-            if(err){
-                emit("error", err);
-            }else{
-                emit("debug", data);
+
+            function onDone(err, data){
+                if(err){
+                    emit("error", err);
+                }else{
+                    emit("debug", data);
+                }
+                //there should be no more emits after "episode_stop"
+                emit("episode_stop");
+                callback(err, data);
             }
-            //there should be no more emits after "episode_stop"
-            emit("episode_stop");
-            callback(err, data);
         });
     };
 

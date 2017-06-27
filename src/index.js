@@ -3,6 +3,7 @@ var λ = require("contra");
 var DB = require("./DB");
 var cocb = require("co-callback");
 var cuid = require("cuid");
+var ktypes = require("krl-stdlib/types");
 var getArg = require("./getArg");
 var hasArg = require("./hasArg");
 var runKRL = require("./runKRL");
@@ -21,11 +22,11 @@ var RulesetRegistry = require("./RulesetRegistry");
 var DependencyResolver = require("dependency-resolver");
 
 var applyFn = cocb.wrap(function*(fn, ctx, args){
-    if(!_.isFunction(fn)){
-        throw new Error("Not a function");
-    }
-    if(fn.is_a_defaction){
+    if(ktypes.isAction(fn)){
         throw new Error("actions can only be called in the rule action block");
+    }
+    if( ! ktypes.isFunction(fn)){
+        throw new Error("Not a function");
     }
     return yield fn(ctx, args);
 });
@@ -96,7 +97,7 @@ module.exports = function(conf){
                     return hasArg(args, name, index);
                 }, runAction);
             });
-            actionFn.is_a_defaction = true;
+            actionFn.is_an_action = true;
             return ctx.scope.set(name, actionFn);
         };
 

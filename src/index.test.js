@@ -760,7 +760,7 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
             },
             function(next){
                 pe.unregisterRuleset("io.picolabs.module-used", function(err){
-                    t.equals(err + "", "Error: unregisterRuleset(\"io.picolabs.module-used\")- it is installed by at least one pico");
+                    t.equals(err + "", "Error: Unable to unregister \"io.picolabs.module-used\": it is installed on at least one pico");
                     next();
                 });
             },

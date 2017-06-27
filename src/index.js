@@ -399,36 +399,48 @@ module.exports = function(conf){
                 callback();
                 return;
             }
-            λ.map(rids, getRulesetForRID, function(err, rs_list){
-                if(err)return callback(err);
 
-                var resolver = new DependencyResolver();
+            var rs_by_rid = {};
+            var resolver = new DependencyResolver();
 
-                var rs_by_rid = {};
-                _.each(rs_list, function(rs){
+            λ.each(rids, function(rid, next){
+                getRulesetForRID(rid, function(err, rs){
+                    if(err){
+                        //TODO handle error rather than stop
+                        next(err);
+                        return;
+                    }
                     rs_by_rid[rs.rid] = rs;
-
                     resolver.add(rs.rid);
                     _.each(rs.meta && rs.meta.use, function(use){
                         if(use.kind === "module"){
                             resolver.setDependency(rs.rid, use.rid);
                         }
                     });
+                    next(null, rs);
                 });
+            }, function(err){
+                if(err)return callback(err);
 
                 //order they need to be loaded in for dependencies to work
                 var rid_order = resolver.sort();
-                rs_list = _.map(rid_order, function(rid){
-                    return rs_by_rid[rid];
-                });
 
-                λ.each.series(rs_list, initializeAndEngageRuleset, callback);
+                λ.each.series(rid_order, function(rid, next){
+                    var rs = rs_by_rid[rid];
+                    initializeAndEngageRuleset(rs, function(err){
+                        if(err){
+                            //TODO handle error rather than stop
+                            next(err);
+                            return;
+                        }
+                        next();
+                    });
+                }, callback);
             });
         });
     };
 
     core.unregisterRuleset = function(rid, callback){
-        var err_prefix = "unregisterRuleset(\"" + rid + "\")- ";
         //first assert rid is not depended on as a module
         try{
             core.rsreg.assertNoDependants(rid);
@@ -439,7 +451,7 @@ module.exports = function(conf){
         db.isRulesetUsed(rid, function(err, is_used){
             if(err) return callback(err);
             if(is_used){
-                callback(new Error(err_prefix + "it is installed by at least one pico"));
+                callback(new Error("Unable to unregister \"" + rid + "\": it is installed on at least one pico"));
                 return;
             }
             db.deleteRuleset(rid, function(err){

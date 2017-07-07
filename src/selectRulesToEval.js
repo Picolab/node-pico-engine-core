@@ -1,6 +1,6 @@
 var _ = require("lodash");
-var λ = require("contra");
 var cocb = require("co-callback");
+var async = require("async");
 var runKRL = require("./runKRL");
 var aggregateEvent = require("./aggregateEvent");
 
@@ -98,7 +98,7 @@ var selectForPico = function(core, ctx, pico, callback){
         return true;
     });
 
-    λ.filter(rules_to_select, function(rule, next){
+    async.filter(rules_to_select, function(rule, next){
         cocb.run(shouldRuleSelect(core, ctx, rule), next);
     }, function(err, rules){
         if(err) return callback(err);

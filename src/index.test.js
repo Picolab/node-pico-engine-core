@@ -1,9 +1,9 @@
 var _ = require("lodash");
-var λ = require("contra");
 var DB = require("./DB");
 var cuid = require("cuid");
 var test = require("tape");
 var http = require("http");
+var async = require("async");
 var memdown = require("memdown");
 var compiler = require("krl-compiler");
 var PicoEngine = require("./");
@@ -37,7 +37,7 @@ var mkEvent = function (spec, attrs){
 
 var mkSignalTask = function(pe, eci){
     return function(domain, type, attrs, timestamp, eid){
-        return λ.curry(pe.signalEvent, {
+        return async.apply(pe.signalEvent, {
             eci: eci,
             eid: eid || "1234",
             domain: domain,
@@ -50,7 +50,7 @@ var mkSignalTask = function(pe, eci){
 
 var mkQueryTask = function(pe, eci, rid){
     return function(name, args){
-        return λ.curry(pe.runQuery, {
+        return async.apply(pe.runQuery, {
             eci: eci,
             rid: rid,
             name: name,
@@ -60,7 +60,7 @@ var mkQueryTask = function(pe, eci, rid){
 };
 
 var testOutputs = function(t, pairs, callback){
-    λ.series(_.map(pairs, function(pair){
+    async.series(_.map(pairs, function(pair){
         if(!_.isArray(pair)){
             return pair;
         }
@@ -84,19 +84,19 @@ test("PicoEngine - hello_world ruleset", function(t){
     mkTestPicoEngine({}, function(err, pe){
         if(err)return t.end(err);
 
-        λ.series({
-            npico: λ.curry(pe.newPico, {}),
-            chan0: λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            rid1x: λ.curry(pe.installRuleset, "id0", "io.picolabs.hello_world"),
+        async.series({
+            npico: async.apply(pe.newPico, {}),
+            chan0: async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            rid1x: async.apply(pe.installRuleset, "id0", "io.picolabs.hello_world"),
 
-            hello_event: λ.curry(pe.signalEvent, {
+            hello_event: async.apply(pe.signalEvent, {
                 eci: "id1",
                 eid: "1234",
                 domain: "echo",
                 type: "hello",
                 attrs: {}
             }),
-            hello_query: λ.curry(pe.runQuery, {
+            hello_query: async.apply(pe.runQuery, {
                 eci: "id1",
                 rid: "io.picolabs.hello_world",
                 name: "hello",
@@ -153,12 +153,12 @@ test("PicoEngine - io.picolabs.persistent", function(t){
         var B_signal = mkSignalTask(pe, "id3");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),//id0 - pico A
-            λ.curry(pe.newPico, {}),//id1 - pico B
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),//id2
-            λ.curry(pe.newChannel, {pico_id: "id1", name: "one", type: "t"}),//id3
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.persistent"),
-            λ.curry(pe.installRuleset, "id1", "io.picolabs.persistent"),
+            async.apply(pe.newPico, {}),//id0 - pico A
+            async.apply(pe.newPico, {}),//id1 - pico B
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),//id2
+            async.apply(pe.newChannel, {pico_id: "id1", name: "one", type: "t"}),//id3
+            async.apply(pe.installRuleset, "id0", "io.picolabs.persistent"),
+            async.apply(pe.installRuleset, "id1", "io.picolabs.persistent"),
 
             //////////////////////////////////////////////////////////////////////////
             //if not set, the var should return undefined
@@ -243,9 +243,9 @@ test("PicoEngine - io.picolabs.events ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.events"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.events"),
             [
                 signal("events", "bind", {name: "blah?!"}),
                 [{name: "bound", options: {name: "blah?!"}}]
@@ -380,9 +380,9 @@ test("PicoEngine - io.picolabs.scope ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.scope"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.scope"),
             [
                 signal("scope", "event0", {name: "name 0"}),
                 [{name: "say", options: {name: "name 0"}}]
@@ -443,9 +443,9 @@ test("PicoEngine - io.picolabs.operators ruleset", function(t){
         var query = mkQueryTask(pe, "id1", "io.picolabs.operators");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.operators"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.operators"),
             [
                 query("results"),
                 {
@@ -506,9 +506,9 @@ test("PicoEngine - io.picolabs.chevron ruleset", function(t){
         var query = mkQueryTask(pe, "id1", "io.picolabs.chevron");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.chevron"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.chevron"),
             [
                 query("d"),
                 "\n            hi 1 + 2 = 3\n            <h1>some<b>html</b></h1>\n        "
@@ -526,9 +526,9 @@ test("PicoEngine - io.picolabs.execution-order ruleset", function(t){
         var query2 = mkQueryTask(pe, "id1", "io.picolabs.execution-order2");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.execution-order"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.execution-order"),
             [
                 query("getOrder"),
                 void 0
@@ -561,7 +561,7 @@ test("PicoEngine - io.picolabs.execution-order ruleset", function(t){
                 query("getOrder"),
                 ["foo_or_bar", "foo", "foo_or_bar", "bar"]
             ],
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.execution-order2"),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.execution-order2"),
             [
                 signal("execution_order", "reset_order"),
                 [{name: "reset_order", options: {}}, {name: "2 - reset_order", options: {}}]
@@ -594,9 +594,9 @@ test("PicoEngine - io.picolabs.engine ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.engine"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.engine"),
             [signal("engine", "newPico"), []],
             [
                 signal("engine", "newChannel", {
@@ -667,9 +667,9 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.module-used"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.module-used"),
 
             // Test overiding module configurations
             [
@@ -705,7 +705,7 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
                 signal("module_defined", "store_memo", {memo: "foo"}),
                 []//should not respond to this event
             ],
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.module-defined"),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.module-defined"),
             [
                 signal("module_defined", "store_memo", {memo: "foo"}),
                 [{name: "store_memo", options: {
@@ -775,9 +775,9 @@ test("PicoEngine - io.picolabs.expressions ruleset", function(t){
         var query = mkQueryTask(pe, "id1", "io.picolabs.expressions");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.expressions"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.expressions"),
             [
                 query("obj"),
                 {
@@ -821,9 +821,9 @@ test("PicoEngine - io.picolabs.meta ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.meta"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.meta"),
             [
                 signal("meta", "event"),
                 [{name: "event", options: {
@@ -887,9 +887,9 @@ test("PicoEngine - io.picolabs.http ruleset", function(t){
         server.listen(0, function(){
             var url = "http://localhost:" + server.address().port;
             testOutputs(t, [
-                λ.curry(pe.newPico, {}),
-                λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-                λ.curry(pe.installRuleset, "id0", "io.picolabs.http"),
+                async.apply(pe.newPico, {}),
+                async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+                async.apply(pe.installRuleset, "id0", "io.picolabs.http"),
                 [
                     signal("http_test", "get", {url: url}),
                     []
@@ -1010,9 +1010,9 @@ test("PicoEngine - io.picolabs.foreach ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.foreach"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.foreach"),
             [
                 signal("foreach", "basic"),
                 [
@@ -1082,9 +1082,9 @@ test("PicoEngine - io.picolabs.event-exp ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.event-exp"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.event-exp"),
         ].concat(_.map([
 
             ["ee_before", "a"],
@@ -1272,9 +1272,9 @@ test("PicoEngine - io.picolabs.within ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.within"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.within"),
         ].concat(_.map([
 
             [10000000000000, "foo", "a"],
@@ -1330,9 +1330,9 @@ test("PicoEngine - io.picolabs.guard-conditions ruleset", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.guard-conditions"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.guard-conditions"),
             [
                 query("getB"),
                 undefined
@@ -1384,9 +1384,9 @@ test("PicoEngine - io.picolabs.with ruleset", function(t){
         var query = mkQueryTask(pe, "id1", "io.picolabs.with");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.with"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.with"),
             [query("add", {a: -2, b: 5}), 3],
             [query("inc", {n: 4}), 5],
             [query("foo", {a: 3}), 9],
@@ -1402,9 +1402,9 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
         var query = mkQueryTask(pe, "id1", "io.picolabs.defaction");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.defaction"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.defaction"),
             [
                 signal("defa", "foo", {}),
                 [{name: "foo", options: {a: "bar", b: 5}}]
@@ -1529,9 +1529,9 @@ test("PicoEngine - io.picolabs.log ruleset", function(t){
         });
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.log"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.log"),
             [signal("log", "levels"), []],
             function(done){
                 t.deepEquals(log_events, [
@@ -1569,12 +1569,12 @@ test("PicoEngine - io.picolabs.key* rulesets", function(t){
         };
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.key-defined"),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.key-used"),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.key-used2"),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.key-used3"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.key-defined"),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.key-used"),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.key-used2"),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.key-used3"),
 
             [query1("getFoo"), "foo key just a string"],
             [query2("getFoo"), "foo key just a string"],
@@ -1630,18 +1630,18 @@ test("PicoEngine - io.picolabs.schedule rulesets", function(t){
             };
         }()),
     });
-    λ.series([
-        λ.curry(db.newPico, {}),
-        λ.curry(db.newChannel, {pico_id: "init0", name: "one", type: "t"}),
-        λ.curry(db.addRulesetToPico, "init0", "io.picolabs.schedule"),
-        λ.curry(db.scheduleEventRepeat, "10 * * * * *", {
+    async.series([
+        async.apply(db.newPico, {}),
+        async.apply(db.newChannel, {pico_id: "init0", name: "one", type: "t"}),
+        async.apply(db.addRulesetToPico, "init0", "io.picolabs.schedule"),
+        async.apply(db.scheduleEventRepeat, "10 * * * * *", {
             eci: "init1",
             eid: "1234",
             domain: "schedule",
             type: "push_log",
             attrs: {from: "startup_event", name: "qux"},
         }),
-        λ.curry(mkTestPicoEngine, {
+        async.apply(mkTestPicoEngine, {
             ldb: function(){return memdb;},
         })
     ], function(err, results){
@@ -1817,8 +1817,8 @@ test("PicoEngine - installRuleset", function(t){
 
         var rid_to_use = "io.picolabs.hello_world";
 
-        λ.series([
-            λ.curry(pe.newPico, {}),
+        async.series([
+            async.apply(pe.newPico, {}),
             function(next){
                 pe.installRuleset("id404", rid_to_use, function(err){
                     t.equals(err + "", "Error: Invalid pico_id: id404");
@@ -1848,9 +1848,9 @@ test("PicoEngine - io.picolabs.last rulesets", function(t){
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.last"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.last"),
 
             [
                 signal("last", "all", {}),
@@ -1887,9 +1887,9 @@ test("PicoEngine - io.picolabs.error rulesets", function(t){
         var query = mkQueryTask(pe, "id1", "io.picolabs.error");
 
         testOutputs(t, [
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.error"),
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.error"),
 
             [
                 query("getErrors"),
@@ -1961,13 +1961,13 @@ test("PicoEngine - (re)registering ruleset shouldn't mess up state", function(t)
                 order.push(val);
             }
         });
-        λ.series([
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.registerRuleset, krl_0, {}),
-            λ.curry(pe.installRuleset, "id0", "foo.rid"),
+        async.series([
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.registerRuleset, krl_0, {}),
+            async.apply(pe.installRuleset, "id0", "foo.rid"),
             signal("foo", "all"),
-            λ.curry(pe.registerRuleset, krl_1, {}),
+            async.apply(pe.registerRuleset, krl_1, {}),
             signal("foo", "all"),
         ], function(err){
             if(err) return t.end(err);
@@ -2005,10 +2005,10 @@ test("PicoEngine - io.picolabs.test-error-messages", function(t){
             };
         };
 
-        λ.series([
-            λ.curry(pe.newPico, {}),
-            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-            λ.curry(pe.installRuleset, "id0", "io.picolabs.test-error-messages"),
+        async.series([
+            async.apply(pe.newPico, {}),
+            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            async.apply(pe.installRuleset, "id0", "io.picolabs.test-error-messages"),
 
             qError(void 0, "Error: missing query.eci", false),
 
@@ -2066,7 +2066,7 @@ test("PicoEngine - startup ruleset dependency ordering", function(t){
     //create a blank engine
     var pe = mkPE();
     //register some krl that has inter-dependencies
-    λ.each.series([
+    async.eachSeries([
         "ruleset D {}",
         "ruleset E {}",
         "ruleset C {meta{use module D use module E}}",

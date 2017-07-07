@@ -1,8 +1,8 @@
 var _ = require("lodash");
-var λ = require("contra");
 var DB = require("./DB");
 var cocb = require("co-callback");
 var cuid = require("cuid");
+var async = require("async");
 var ktypes = require("krl-stdlib/types");
 var getArg = require("./getArg");
 var hasArg = require("./hasArg");
@@ -413,7 +413,7 @@ module.exports = function(conf){
             var rs_by_rid = {};
             var resolver = new DependencyResolver();
 
-            λ.each(rids, function(rid, next){
+            async.each(rids, function(rid, next){
                 getRulesetForRID(rid, function(err, rs){
                     if(err){
                         //TODO handle error rather than stop
@@ -435,7 +435,7 @@ module.exports = function(conf){
                 //order they need to be loaded in for dependencies to work
                 var rid_order = resolver.sort();
 
-                λ.each.series(rid_order, function(rid, next){
+                async.eachSeries(rid_order, function(rid, next){
                     var rs = rs_by_rid[rid];
                     initializeAndEngageRuleset(rs, function(err){
                         if(err){

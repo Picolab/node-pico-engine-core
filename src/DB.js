@@ -1,6 +1,6 @@
 var _ = require("lodash");
-var λ = require("contra");
 var cuid = require("cuid");
+var async = require("async");
 var crypto = require("crypto");
 var levelup = require("levelup");
 var bytewise = require("bytewise");
@@ -418,7 +418,7 @@ module.exports = function(opts){
                 hashes.push(hash);
             }, function(err){
                 if(err) return callback(err);
-                λ.each(hashes, function(hash, next){
+                async.each(hashes, function(hash, next){
                     ldb.get(["rulesets", "krl", hash], function(err, data){
                         if(err) return next(err);
                         if(_.isString(data.url)){

@@ -1,7 +1,7 @@
 var _ = require("lodash");
-var λ = require("contra");
 var DB = require("./DB");
 var test = require("tape");
+var async = require("async");
 var memdown = require("memdown");
 
 var mkTestDB = function(opts){
@@ -19,15 +19,15 @@ var mkTestDB = function(opts){
 
 test("DB - write and read", function(t){
     var db = mkTestDB();
-    λ.series({
-        start_db: λ.curry(db.toObj),
-        pico0: λ.curry(db.newPico, {}),
-        chan1: λ.curry(db.newChannel, {pico_id: "id0", name: "one", type: "t"}),
-        rule0: λ.curry(db.addRulesetToPico, "id0", "rs0"),
-        chan2: λ.curry(db.newChannel, {pico_id: "id0", name: "two", type: "t"}),
-        end_db: λ.curry(db.toObj),
-        rmpico0: λ.curry(db.removePico, "id0"),
-        post_del_db: λ.curry(db.toObj)
+    async.series({
+        start_db: async.apply(db.toObj),
+        pico0: async.apply(db.newPico, {}),
+        chan1: async.apply(db.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+        rule0: async.apply(db.addRulesetToPico, "id0", "rs0"),
+        chan2: async.apply(db.newChannel, {pico_id: "id0", name: "two", type: "t"}),
+        end_db: async.apply(db.toObj),
+        rmpico0: async.apply(db.removePico, "id0"),
+        post_del_db: async.apply(db.toObj)
     }, function(err, data){
         if(err) return t.end(err);
 
@@ -85,15 +85,15 @@ test("DB - storeRuleset", function(t){
     _.set(expected, ["rulesets", "versions", rid, timestamp, hash], true);
     _.set(expected, ["rulesets", "url", url.toLowerCase().trim(), rid, hash], true);
 
-    λ.series({
-        start_db: λ.curry(db.toObj),
+    async.series({
+        start_db: async.apply(db.toObj),
         store: function(next){
             db.storeRuleset(krl_src, {
                 url: url
             }, next, timestamp);
         },
-        findRulesetsByURL: λ.curry(db.findRulesetsByURL, url),
-        end_db: λ.curry(db.toObj)
+        findRulesetsByURL: async.apply(db.findRulesetsByURL, url),
+        end_db: async.apply(db.toObj)
     }, function(err, data){
         if(err) return t.end(err);
         t.deepEquals(data.start_db, {});
@@ -112,7 +112,7 @@ test("DB - enableRuleset", function(t){
 
     var krl_src = "ruleset io.picolabs.cool {}";
     //TODO
-    λ.waterfall([
+    async.waterfall([
         function(callback){
             db.toObj(callback);
         },
@@ -157,9 +157,9 @@ test("DB - enableRuleset", function(t){
 test("DB - read keys that don't exist", function(t){
     var db = mkTestDB();
 
-    λ.series({
-        ent: λ.curry(db.getEntVar, "pico0", "rid0", "var that doesn't exisit"),
-        app: λ.curry(db.getAppVar, "rid0", "var that doesn't exisit")
+    async.series({
+        ent: async.apply(db.getEntVar, "pico0", "rid0", "var that doesn't exisit"),
+        app: async.apply(db.getAppVar, "rid0", "var that doesn't exisit")
     }, function(err, data){
         if(err) return t.end(err);
         t.deepEquals(data.ent, undefined);
@@ -171,14 +171,14 @@ test("DB - read keys that don't exist", function(t){
 test("DB - getOwnerECI", function(t){
     var db = mkTestDB();
 
-    λ.series({
-        eci_0: λ.curry(db.getOwnerECI),
-        new_chan: λ.curry(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        eci_1: λ.curry(db.getOwnerECI),
-        new_chan1: λ.curry(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        new_chan2: λ.curry(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        new_chan3: λ.curry(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        eci_2: λ.curry(db.getOwnerECI),
+    async.series({
+        eci_0: async.apply(db.getOwnerECI),
+        new_chan: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
+        eci_1: async.apply(db.getOwnerECI),
+        new_chan1: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
+        new_chan2: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
+        new_chan3: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
+        eci_2: async.apply(db.getOwnerECI),
     }, function(err, data){
         if(err) return t.end(err);
         t.deepEquals(data.eci_0, undefined);
@@ -191,18 +191,18 @@ test("DB - getOwnerECI", function(t){
 test("DB - isRulesetUsed", function(t){
     var db = mkTestDB();
 
-    λ.series({
-        pico0: λ.curry(db.newPico, {}),
-        pico1: λ.curry(db.newPico, {}),
+    async.series({
+        pico0: async.apply(db.newPico, {}),
+        pico1: async.apply(db.newPico, {}),
 
-        foo0: λ.curry(db.addRulesetToPico, "id0", "rs-foo"),
-        foo1: λ.curry(db.addRulesetToPico, "id1", "rs-foo"),
-        bar0: λ.curry(db.addRulesetToPico, "id0", "rs-bar"),
+        foo0: async.apply(db.addRulesetToPico, "id0", "rs-foo"),
+        foo1: async.apply(db.addRulesetToPico, "id1", "rs-foo"),
+        bar0: async.apply(db.addRulesetToPico, "id0", "rs-bar"),
 
-        is_foo: λ.curry(db.isRulesetUsed, "rs-foo"),
-        is_bar: λ.curry(db.isRulesetUsed, "rs-bar"),
-        is_baz: λ.curry(db.isRulesetUsed, "rs-baz"),
-        is_qux: λ.curry(db.isRulesetUsed, "rs-qux"),
+        is_foo: async.apply(db.isRulesetUsed, "rs-foo"),
+        is_bar: async.apply(db.isRulesetUsed, "rs-bar"),
+        is_baz: async.apply(db.isRulesetUsed, "rs-baz"),
+        is_qux: async.apply(db.isRulesetUsed, "rs-qux"),
     }, function(err, data){
         if(err) return t.end(err);
         t.equals(data.is_foo, true);
@@ -234,15 +234,15 @@ test("DB - deleteRuleset", function(t){
         };
     };
 
-    λ.series({
+    async.series({
         store_foo: storeRuleset("foo"),
         store_bar: storeRuleset("bar"),
 
-        init_db: λ.curry(db.toObj),
+        init_db: async.apply(db.toObj),
 
-        del_foo: λ.curry(db.deleteRuleset, "io.picolabs.foo"),
+        del_foo: async.apply(db.deleteRuleset, "io.picolabs.foo"),
 
-        end_db: λ.curry(db.toObj),
+        end_db: async.apply(db.toObj),
     }, function(err, data){
         if(err) return t.end(err);
 
@@ -291,10 +291,10 @@ test("DB - scheduleEventAt", function(t){
         };
     };
 
-    var getNext = λ.curry(db.nextScheduleEventAt);
+    var getNext = async.apply(db.nextScheduleEventAt);
 
-    λ.series({
-        init_db: λ.curry(db.toObj),
+    async.series({
+        init_db: async.apply(db.toObj),
         next0: getNext,
         at0: eventAt("Feb 22, 2222", "foo"),
         next1: getNext,
@@ -303,7 +303,7 @@ test("DB - scheduleEventAt", function(t){
         at2: eventAt("Feb  2, 2222", "baz"),
         next3: getNext,
 
-        list: λ.curry(db.listScheduled),
+        list: async.apply(db.listScheduled),
 
         rm0: rmAt("id0"),
         next4: getNext,
@@ -312,7 +312,7 @@ test("DB - scheduleEventAt", function(t){
         rm1: rmAt("id1"),
         next6: getNext,
 
-        end_db: λ.curry(db.toObj),
+        end_db: async.apply(db.toObj),
     }, function(err, data){
         if(err) return t.end(err);
 
@@ -372,20 +372,20 @@ test("DB - scheduleEventRepeat", function(t){
             }, callback);
         };
     };
-    λ.series({
-        init_db: λ.curry(db.toObj),
+    async.series({
+        init_db: async.apply(db.toObj),
 
         rep0: eventRep("*/5 * * * * *", "foo"),
         rep1: eventRep("* */5 * * * *", "bar"),
 
-        mid_db: λ.curry(db.toObj),
+        mid_db: async.apply(db.toObj),
 
-        list: λ.curry(db.listScheduled),
+        list: async.apply(db.listScheduled),
 
-        rm0: λ.curry(db.removeScheduled, "id0"),
-        rm1: λ.curry(db.removeScheduled, "id1"),
+        rm0: async.apply(db.removeScheduled, "id0"),
+        rm1: async.apply(db.removeScheduled, "id1"),
 
-        end_db: λ.curry(db.toObj),
+        end_db: async.apply(db.toObj),
     }, function(err, data){
         if(err) return t.end(err);
 
@@ -421,15 +421,15 @@ test("DB - scheduleEventRepeat", function(t){
 test("DB - removeRulesetFromPico", function(t){
     var db = mkTestDB();
 
-    λ.series({
-        addRS: λ.curry(db.addRulesetToPico, "pico0", "rid0"),
-        ent0: λ.curry(db.putEntVar, "pico0", "rid0", "foo", "val0"),
-        ent1: λ.curry(db.putEntVar, "pico0", "rid0", "bar", "val1"),
-        db_before: λ.curry(db.toObj),
+    async.series({
+        addRS: async.apply(db.addRulesetToPico, "pico0", "rid0"),
+        ent0: async.apply(db.putEntVar, "pico0", "rid0", "foo", "val0"),
+        ent1: async.apply(db.putEntVar, "pico0", "rid0", "bar", "val1"),
+        db_before: async.apply(db.toObj),
 
-        rmRS: λ.curry(db.removeRulesetFromPico, "pico0", "rid0"),
+        rmRS: async.apply(db.removeRulesetFromPico, "pico0", "rid0"),
 
-        db_after: λ.curry(db.toObj),
+        db_after: async.apply(db.toObj),
     }, function(err, data){
         if(err) return t.end(err);
 
@@ -450,19 +450,19 @@ test("DB - removeRulesetFromPico", function(t){
 
 test("DB - getPicoIDByECI", function(t){
     var db = mkTestDB();
-    λ.series({
-        pico0: λ.curry(db.newPico, {}),
-        pico1: λ.curry(db.newPico, {}),
+    async.series({
+        pico0: async.apply(db.newPico, {}),
+        pico1: async.apply(db.newPico, {}),
 
-        c2_p0: λ.curry(db.newChannel, {pico_id: "id0", name: "two", type: "t"}),
-        c3_p1: λ.curry(db.newChannel, {pico_id: "id1", name: "three", type: "t"}),
-        c4_p0: λ.curry(db.newChannel, {pico_id: "id0", name: "four", type: "t"}),
-        c5_p1: λ.curry(db.newChannel, {pico_id: "id1", name: "five", type: "t"}),
+        c2_p0: async.apply(db.newChannel, {pico_id: "id0", name: "two", type: "t"}),
+        c3_p1: async.apply(db.newChannel, {pico_id: "id1", name: "three", type: "t"}),
+        c4_p0: async.apply(db.newChannel, {pico_id: "id0", name: "four", type: "t"}),
+        c5_p1: async.apply(db.newChannel, {pico_id: "id1", name: "five", type: "t"}),
 
-        get_c2: λ.curry(db.getPicoIDByECI, "id2"),
-        get_c3: λ.curry(db.getPicoIDByECI, "id3"),
-        get_c4: λ.curry(db.getPicoIDByECI, "id4"),
-        get_c5: λ.curry(db.getPicoIDByECI, "id5"),
+        get_c2: async.apply(db.getPicoIDByECI, "id2"),
+        get_c3: async.apply(db.getPicoIDByECI, "id3"),
+        get_c4: async.apply(db.getPicoIDByECI, "id4"),
+        get_c5: async.apply(db.getPicoIDByECI, "id5"),
 
     }, function(err, data){
         if(err) return t.end(err);
@@ -482,18 +482,18 @@ test("DB - getPicoIDByECI", function(t){
 
 test("DB - listChannels", function(t){
     var db = mkTestDB();
-    λ.series({
-        pico0: λ.curry(db.newPico, {}),
-        pico1: λ.curry(db.newPico, {}),
+    async.series({
+        pico0: async.apply(db.newPico, {}),
+        pico1: async.apply(db.newPico, {}),
 
-        c2_p0: λ.curry(db.newChannel, {pico_id: "id0", name: "two", type: "t2"}),
-        c3_p1: λ.curry(db.newChannel, {pico_id: "id1", name: "three", type: "t3"}),
-        c4_p0: λ.curry(db.newChannel, {pico_id: "id0", name: "four", type: "t4"}),
-        c5_p1: λ.curry(db.newChannel, {pico_id: "id1", name: "five", type: "t5"}),
+        c2_p0: async.apply(db.newChannel, {pico_id: "id0", name: "two", type: "t2"}),
+        c3_p1: async.apply(db.newChannel, {pico_id: "id1", name: "three", type: "t3"}),
+        c4_p0: async.apply(db.newChannel, {pico_id: "id0", name: "four", type: "t4"}),
+        c5_p1: async.apply(db.newChannel, {pico_id: "id1", name: "five", type: "t5"}),
 
-        list0: λ.curry(db.listChannels, "id0"),
-        list1: λ.curry(db.listChannels, "id1"),
-        list404: λ.curry(db.listChannels, "id404"),
+        list0: async.apply(db.listChannels, "id0"),
+        list1: async.apply(db.listChannels, "id1"),
+        list404: async.apply(db.listChannels, "id404"),
 
     }, function(err, data){
         if(err) return t.end(err);
@@ -537,23 +537,23 @@ test("DB - listAllEnabledRIDs", function(t){
         };
     };
 
-    λ.series({
-        list0: λ.curry(db.listAllEnabledRIDs),
+    async.series({
+        list0: async.apply(db.listAllEnabledRIDs),
 
         s_foo: store("foo"),
         s_bar: store("bar"),
         s_baz: store("baz"),
-        list1: λ.curry(db.listAllEnabledRIDs),
+        list1: async.apply(db.listAllEnabledRIDs),
 
         e_foo: enable("foo"),
-        list2: λ.curry(db.listAllEnabledRIDs),
+        list2: async.apply(db.listAllEnabledRIDs),
 
         e_bar: enable("bar"),
         e_baz: enable("baz"),
-        list3: λ.curry(db.listAllEnabledRIDs),
+        list3: async.apply(db.listAllEnabledRIDs),
 
-        d_foo: λ.curry(db.disableRuleset, "foo"),
-        list4: λ.curry(db.listAllEnabledRIDs),
+        d_foo: async.apply(db.disableRuleset, "foo"),
+        list4: async.apply(db.listAllEnabledRIDs),
     }, function(err, data){
         if(err) return t.end(err);
 

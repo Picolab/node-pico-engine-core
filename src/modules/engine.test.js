@@ -116,7 +116,7 @@ test("engine:installRuleset", function(t){
             }),
             registerRulesetURL: tick(function(url, callback){
                 callback(null, {
-                    rid: "REG:" + /\/([^\/]*)\.krl$/.exec(url)[1]
+                    rid: "REG:" + /\/([^/]*)\.krl$/.exec(url)[1]
                 });
             }),
             db: {

@@ -212,8 +212,8 @@ module.exports = function(opts){
                     }
                 }
                 callback(undefined, _.has(rule.select.state_machine, curr_state)
-                        ? curr_state
-                        : "start");
+                    ? curr_state
+                    : "start");
             });
         },
         putStateMachineState: function(pico_id, rule, state, callback){

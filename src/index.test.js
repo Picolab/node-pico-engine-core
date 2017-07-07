@@ -1016,59 +1016,59 @@ test("PicoEngine - io.picolabs.foreach ruleset", function(t){
             [
                 signal("foreach", "basic"),
                 [
-                        {name: "basic", options: {x: 1}},
-                        {name: "basic", options: {x: 2}},
-                        {name: "basic", options: {x: 3}}
+                    {name: "basic", options: {x: 1}},
+                    {name: "basic", options: {x: 2}},
+                    {name: "basic", options: {x: 3}}
                 ]
             ],
             [
                 signal("foreach", "map"),
                 [
-                        {name: "map", options: {k: "a", v: 1}},
-                        {name: "map", options: {k: "b", v: 2}},
-                        {name: "map", options: {k: "c", v: 3}}
+                    {name: "map", options: {k: "a", v: 1}},
+                    {name: "map", options: {k: "b", v: 2}},
+                    {name: "map", options: {k: "c", v: 3}}
                 ]
             ],
             [
                 signal("foreach", "nested"),
                 [
-                        {name: "nested", options: {x: 1, y: "a"}},
-                        {name: "nested", options: {x: 1, y: "b"}},
-                        {name: "nested", options: {x: 1, y: "c"}},
-                        {name: "nested", options: {x: 2, y: "a"}},
-                        {name: "nested", options: {x: 2, y: "b"}},
-                        {name: "nested", options: {x: 2, y: "c"}},
-                        {name: "nested", options: {x: 3, y: "a"}},
-                        {name: "nested", options: {x: 3, y: "b"}},
-                        {name: "nested", options: {x: 3, y: "c"}},
+                    {name: "nested", options: {x: 1, y: "a"}},
+                    {name: "nested", options: {x: 1, y: "b"}},
+                    {name: "nested", options: {x: 1, y: "c"}},
+                    {name: "nested", options: {x: 2, y: "a"}},
+                    {name: "nested", options: {x: 2, y: "b"}},
+                    {name: "nested", options: {x: 2, y: "c"}},
+                    {name: "nested", options: {x: 3, y: "a"}},
+                    {name: "nested", options: {x: 3, y: "b"}},
+                    {name: "nested", options: {x: 3, y: "c"}},
                 ]
             ],
             [
                 signal("foreach", "scope"),
                 [
-                        {name: "scope", options: {foo: 1, bar: 0, baz: 0}},
-                        {name: "scope", options: {foo: 1, bar: 1, baz: 1}},
+                    {name: "scope", options: {foo: 1, bar: 0, baz: 0}},
+                    {name: "scope", options: {foo: 1, bar: 1, baz: 1}},
 
-                        {name: "scope", options: {foo: 2, bar: 0, baz: 0}},
-                        {name: "scope", options: {foo: 2, bar: 1, baz: 2}},
-                        {name: "scope", options: {foo: 2, bar: 2, baz: 4}},
+                    {name: "scope", options: {foo: 2, bar: 0, baz: 0}},
+                    {name: "scope", options: {foo: 2, bar: 1, baz: 2}},
+                    {name: "scope", options: {foo: 2, bar: 2, baz: 4}},
 
-                        {name: "scope", options: {foo: 3, bar: 0, baz: 0}},
-                        {name: "scope", options: {foo: 3, bar: 1, baz: 3}},
-                        {name: "scope", options: {foo: 3, bar: 2, baz: 6}},
-                        {name: "scope", options: {foo: 3, bar: 3, baz: 9}},
+                    {name: "scope", options: {foo: 3, bar: 0, baz: 0}},
+                    {name: "scope", options: {foo: 3, bar: 1, baz: 3}},
+                    {name: "scope", options: {foo: 3, bar: 2, baz: 6}},
+                    {name: "scope", options: {foo: 3, bar: 3, baz: 9}},
 
-                        {name: "scope", options: {foo: 1, bar: 0, baz: 0}},
-                        {name: "scope", options: {foo: 1, bar: 1, baz: 1}},
+                    {name: "scope", options: {foo: 1, bar: 0, baz: 0}},
+                    {name: "scope", options: {foo: 1, bar: 1, baz: 1}},
 
-                        {name: "scope", options: {foo: 2, bar: 0, baz: 0}},
-                        {name: "scope", options: {foo: 2, bar: 1, baz: 2}},
-                        {name: "scope", options: {foo: 2, bar: 2, baz: 4}},
+                    {name: "scope", options: {foo: 2, bar: 0, baz: 0}},
+                    {name: "scope", options: {foo: 2, bar: 1, baz: 2}},
+                    {name: "scope", options: {foo: 2, bar: 2, baz: 4}},
 
-                        {name: "scope", options: {foo: 3, bar: 0, baz: 0}},
-                        {name: "scope", options: {foo: 3, bar: 1, baz: 3}},
-                        {name: "scope", options: {foo: 3, bar: 2, baz: 6}},
-                        {name: "scope", options: {foo: 3, bar: 3, baz: 9}},
+                    {name: "scope", options: {foo: 3, bar: 0, baz: 0}},
+                    {name: "scope", options: {foo: 3, bar: 1, baz: 3}},
+                    {name: "scope", options: {foo: 3, bar: 2, baz: 6}},
+                    {name: "scope", options: {foo: 3, bar: 3, baz: 9}},
                 ]
             ],
         ], t.end);

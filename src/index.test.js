@@ -1901,6 +1901,10 @@ test("PicoEngine - io.picolabs.error rulesets", function(t){
                 //NOTE basic1 should not execute b/c basic0 raised an error
             ]],
 
+            [signal("error", "stop_on_error"), [
+                {name: "stop_on_error", options: {}},
+            ]],
+
             [
                 query("getErrors"),
                 [
@@ -1910,6 +1914,13 @@ test("PicoEngine - io.picolabs.error rulesets", function(t){
                         msg: "some info error",
                         error_rid: "io.picolabs.error",
                         rule_name: "basic0",
+                        genus: "user",
+                    },
+                    {
+                        level: "info",
+                        msg: "stop_on_error 1",
+                        error_rid: "io.picolabs.error",
+                        rule_name: "stop_on_error",
                         genus: "user",
                     },
                 ]

@@ -1071,6 +1071,32 @@ test("PicoEngine - io.picolabs.foreach ruleset", function(t){
                     {name: "scope", options: {foo: 3, bar: 3, baz: 9}},
                 ]
             ],
+
+            [
+                signal("foreach", "final", {x: "a", y: "0"}),
+                [
+                    {name: "final", options: {x: "a", y: "0"}},
+                    {name: "final_raised", options: {x: "a", y: "0"}},
+                ]
+            ],
+            [
+                signal("foreach", "final", {x: "a", y: "0,1"}),
+                [
+                    {name: "final", options: {x: "a", y: "0"}},
+                    {name: "final", options: {x: "a", y: "1"}},
+                    {name: "final_raised", options: {x: "a", y: "1"}},
+                ]
+            ],
+            [
+                signal("foreach", "final", {x: "a,b", y: "0,1"}),
+                [
+                    {name: "final", options: {x: "a", y: "0"}},
+                    {name: "final", options: {x: "a", y: "1"}},
+                    {name: "final", options: {x: "b", y: "0"}},
+                    {name: "final", options: {x: "b", y: "1"}},
+                    {name: "final_raised", options: {x: "b", y: "1"}},
+                ]
+            ],
         ], t.end);
     });
 });

@@ -225,6 +225,104 @@ module.exports = {
           }
         }
       }
+    },
+    "final": {
+      "name": "final",
+      "select": {
+        "graph": { "foreach": { "final": { "expr_0": true } } },
+        "eventexprs": {
+          "expr_0": function* (ctx, aggregateEvent) {
+            return true;
+          }
+        },
+        "state_machine": {
+          "start": [[
+              "expr_0",
+              "end"
+            ]]
+        }
+      },
+      "body": function* (ctx, runAction, toPairs) {
+        var foreach_is_final = true;
+        var foreach0_pairs = toPairs(yield ctx.callKRLstdlib("split", [
+          yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["x"]),
+          ","
+        ]));
+        var foreach0_len = foreach0_pairs.length;
+        var foreach0_i;
+        for (foreach0_i = 0; foreach0_i < foreach0_len; foreach0_i++) {
+          foreach_is_final = true;
+          foreach_is_final = foreach_is_final && foreach0_i === foreach0_len - 1;
+          ctx.scope.set("x", foreach0_pairs[foreach0_i][1]);
+          var foreach1_pairs = toPairs(yield ctx.callKRLstdlib("split", [
+            yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["y"]),
+            ","
+          ]));
+          var foreach1_len = foreach1_pairs.length;
+          var foreach1_i;
+          for (foreach1_i = 0; foreach1_i < foreach1_len; foreach1_i++) {
+            foreach_is_final = foreach_is_final && foreach1_i === foreach1_len - 1;
+            ctx.scope.set("y", foreach1_pairs[foreach1_i][1]);
+            var fired = true;
+            if (fired) {
+              yield runAction(ctx, void 0, "send_directive", [
+                "final",
+                {
+                  "x": ctx.scope.get("x"),
+                  "y": ctx.scope.get("y")
+                }
+              ], []);
+            }
+            if (fired)
+              ctx.emit("debug", "fired");
+            else
+              ctx.emit("debug", "not fired");
+            if (foreach_is_final)
+              yield ctx.raiseEvent({
+                "domain": "foreach",
+                "type": "final_raised",
+                "attributes": {
+                  "x": ctx.scope.get("x"),
+                  "y": ctx.scope.get("y")
+                },
+                "for_rid": undefined
+              });
+          }
+        }
+      }
+    },
+    "final_raised": {
+      "name": "final_raised",
+      "select": {
+        "graph": { "foreach": { "final_raised": { "expr_0": true } } },
+        "eventexprs": {
+          "expr_0": function* (ctx, aggregateEvent) {
+            return true;
+          }
+        },
+        "state_machine": {
+          "start": [[
+              "expr_0",
+              "end"
+            ]]
+        }
+      },
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "final_raised",
+            {
+              "x": yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["x"]),
+              "y": yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["y"])
+            }
+          ], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+      }
     }
   }
 };

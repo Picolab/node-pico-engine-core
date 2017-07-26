@@ -1598,7 +1598,7 @@ test("PicoEngine - io.picolabs.key* rulesets", function(t){
 
             //testing configured module
             [query1("getAPIKeys"), ["foo key just a string", "baz subkey for bar key"]],
-            [query2("getAPIKeys"), ["default-key1", "default-key2"]],
+            [query2("getAPIKeys"), ["default-key1", "this key is defined inside the module"]],
 
             //test keys: work in different execution areas
             [

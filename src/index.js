@@ -178,6 +178,8 @@ module.exports = function(conf){
     var initializeRulest = cocb.wrap(function*(rs){
         rs.scope = SymbolTable();
         rs.modules_used = {};
+        core.rsreg.setupOwnKeys(rs);
+
         var use_array = _.values(rs.meta && rs.meta.use);
         var i, use, dep_rs, ctx2;
         for(i = 0; i < use_array.length; i++){

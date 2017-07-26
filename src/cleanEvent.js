@@ -38,9 +38,7 @@ module.exports = function(event_orig){
         }
     }
 
-    var eid = ktypes.toString(event_orig.eid);
-
-    eid = eid.trim();
+    var eid = ktypes.toString(event_orig.eid).trim();
     if(eid.length === 0 || eid === "null"){
         eid = "none";
     }

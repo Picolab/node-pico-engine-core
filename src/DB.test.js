@@ -3,6 +3,7 @@ var DB = require("./DB");
 var test = require("tape");
 var async = require("async");
 var memdown = require("memdown");
+var migrations = require("./migrations");
 
 var mkTestDB = function(opts){
     opts = opts || {};
@@ -569,29 +570,57 @@ test("DB - listAllEnabledRIDs", function(t){
 
 test("DB - migrations", function(t){
     var db = mkTestDB();
-    async.series({
-        log0: async.apply(db.getMigrationLog),
-        write0: async.apply(db.recordMigration, "v1"),
-        log1: async.apply(db.getMigrationLog),
-        write1: async.apply(db.recordMigration, "v200"),
-        log2: async.apply(db.getMigrationLog),
-        del0: async.apply(db.removeMigration, "v200"),
-        log3: async.apply(db.getMigrationLog),
-        del1: async.apply(db.removeMigration, "v1"),
-        log4: async.apply(db.getMigrationLog),
-    }, function(err, data){
-        if(err) return t.end(err);
+    async.series([
+        function(next){
+            db.getMigrationLog(function(err, log){
+                if(err) return next(err);
+                t.deepEquals(log, {});
+                next();
+            });
+        },
+        async.apply(db.recordMigration, "v1"),
+        function(next){
+            db.getMigrationLog(function(err, log){
+                if(err) return next(err);
 
-        t.deepEquals(data.log0, {});
+                t.deepEquals(_.keys(log), ["v1"]);
+                t.deepEquals(_.keys(log["v1"]), ["timestamp"]);
+                t.equals(log["v1"].timestamp, (new Date(log["v1"].timestamp)).toISOString());
 
-        t.deepEquals(_.keys(data.log1), ["v1"]);
-        t.deepEquals(_.keys(data.log1["v1"]), ["timestamp"]);
-        t.equals(data.log1["v1"].timestamp, (new Date(data.log1["v1"].timestamp)).toISOString());
-
-        t.deepEquals(_.keys(data.log2), ["v1", "v200"]);
-        t.deepEquals(_.keys(data.log3), ["v1"]);
-        t.deepEquals(data.log4, {});
-
-        t.end();
-    });
+                next();
+            });
+        },
+        async.apply(db.recordMigration, "v200"),
+        function(next){
+            db.getMigrationLog(function(err, log){
+                if(err) return next(err);
+                t.deepEquals(_.keys(log), ["v1", "v200"]);
+                next();
+            });
+        },
+        async.apply(db.removeMigration, "v200"),
+        function(next){
+            db.getMigrationLog(function(err, log){
+                if(err) return next(err);
+                t.deepEquals(_.keys(log), ["v1"]);
+                next();
+            });
+        },
+        async.apply(db.removeMigration, "v1"),
+        function(next){
+            db.getMigrationLog(function(err, log){
+                if(err) return next(err);
+                t.deepEquals(log, {});
+                next();
+            });
+        },
+        async.apply(db.checkAndRunMigrations),
+        function(next){
+            db.getMigrationLog(function(err, log){
+                if(err) return next(err);
+                t.deepEquals(_.keys(log), _.keys(migrations));
+                next();
+            });
+        },
+    ], t.end);
 });

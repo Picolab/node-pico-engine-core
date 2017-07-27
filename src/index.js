@@ -565,6 +565,8 @@ module.exports = function(conf){
         getEntVar: db.getEntVar,
         removeEntVar: db.removeEntVar,
 
+        checkAndRunMigrations: db.checkAndRunMigrations,
+
         dbDump: db.toObj,
     };
     if(conf.___core_testing_mode){

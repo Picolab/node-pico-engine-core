@@ -4,6 +4,7 @@ var async = require("async");
 var crypto = require("crypto");
 var levelup = require("levelup");
 var bytewise = require("bytewise");
+var migrations = require("./migrations");
 var safeJsonCodec = require("level-json-coerce-null");
 var extractRulesetID = require("./extractRulesetID");
 
@@ -45,6 +46,25 @@ module.exports = function(opts){
     });
 
     var newID = _.isFunction(opts.newID) ? opts.newID : cuid;
+
+    var getMigrationLog = function(callback){
+        var log = {};
+        dbRange(ldb, {
+            prefix: ["migration-log"],
+        }, function(data){
+            log[data.key[1]] = data.value;
+        }, function(err){
+            callback(err, log);
+        });
+    };
+    var recordMigration = function(version, callback){
+        ldb.put(["migration-log", version + ""], {
+            timestamp: (new Date()).toISOString(),
+        }, callback);
+    };
+    var removeMigration = function(version, callback){
+        ldb.del(["migration-log", version + ""], callback);
+    };
 
     return {
         toObj: function(callback){
@@ -532,23 +552,29 @@ module.exports = function(opts){
                 ldb.batch(to_batch, callback);
             });
         },
-        getMigrationLog: function(callback){
-            var log = {};
-            dbRange(ldb, {
-                prefix: ["migration-log"],
-            }, function(data){
-                log[data.key[1]] = data.value;
-            }, function(err){
-                callback(err, log);
+        getMigrationLog: getMigrationLog,
+        recordMigration: recordMigration,
+        removeMigration: removeMigration,
+        checkAndRunMigrations: function(callback){
+            getMigrationLog(function(err, log){
+                if(err) return callback(err);
+
+                var to_run = [];
+                _.each(migrations, function(m, version){
+                    if( ! _.has(log, version)){
+                        to_run.push(version);
+                    }
+                });
+                to_run.sort();
+
+                async.eachSeries(to_run, function(version, next){
+                    var m = migrations[version];
+                    m.up(ldb, function(err, data){
+                        if(err) return next(err);
+                        recordMigration(version, next);
+                    });
+                }, callback);
             });
-        },
-        recordMigration: function(version, callback){
-            ldb.put(["migration-log", version + ""], {
-                timestamp: (new Date()).toISOString(),
-            }, callback);
-        },
-        removeMigration: function(version, callback){
-            ldb.del(["migration-log", version + ""], callback);
         },
     };
 };

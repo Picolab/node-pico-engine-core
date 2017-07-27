@@ -2,22 +2,23 @@ var dbRange = require("../dbRange");
 
 module.exports = {
     up: function(ldb, callback){
-        // /resultset/:rid/vars/:varname -> /appvars/:rid/:varname
+        // /pico/:pico_id/:rid/vars/:varname -> /entvars/:pico_id/:rid/:varname
 
         var to_batch = [];
 
         dbRange(ldb, {
-            prefix: ["resultset"],
+            prefix: ["pico"],
         }, function(data){
-            if(data.key[2] !== "vars"){
+            if(data.key[3] !== "vars"){
                 return;
             }
-            var rid = data.key[1];
-            var varname = data.key[3];
+            var pico_id = data.key[1];
+            var rid = data.key[2];
+            var varname = data.key[4];
 
             to_batch.push({
                 type: "put",
-                key: ["appvars", rid, varname],
+                key: ["entvars", pico_id, rid, varname],
                 value: data.value,
             });
 

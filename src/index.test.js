@@ -152,6 +152,10 @@ test("PicoEngine - io.picolabs.persistent", function(t){
         var A_signal = mkSignalTask(pe, "id2");
         var B_signal = mkSignalTask(pe, "id3");
 
+
+        var entvar_path = ["entvars", "id0", "io.picolabs.persistent", "user"];
+        var appvar_path = ["appvars", "io.picolabs.persistent", "appvar"];
+
         testOutputs(t, [
             async.apply(pe.newPico, {}),//id0 - pico A
             async.apply(pe.newPico, {}),//id1 - pico B
@@ -208,8 +212,8 @@ test("PicoEngine - io.picolabs.persistent", function(t){
             function(done){
                 pe.dbDump(function(err, data){
                     if(err)return done(err);
-                    t.ok(_.has(data, ["pico", "id0", "io.picolabs.persistent", "vars", "user"]));
-                    t.ok(_.has(data, ["resultset", "io.picolabs.persistent", "vars", "appvar"]));
+                    t.ok(_.has(data, entvar_path));
+                    t.ok(_.has(data, appvar_path));
                     done();
                 });
             },
@@ -217,8 +221,8 @@ test("PicoEngine - io.picolabs.persistent", function(t){
             function(done){
                 pe.dbDump(function(err, data){
                     if(err)return done(err);
-                    t.notOk(_.has(data, ["pico", "id0", "io.picolabs.persistent", "vars", "user"]));
-                    t.ok(_.has(data, ["resultset", "io.picolabs.persistent", "vars", "appvar"]));
+                    t.notOk(_.has(data, entvar_path));
+                    t.ok(_.has(data, appvar_path));
                     done();
                 });
             },
@@ -226,8 +230,8 @@ test("PicoEngine - io.picolabs.persistent", function(t){
             function(done){
                 pe.dbDump(function(err, data){
                     if(err)return done(err);
-                    t.notOk(_.has(data, ["pico", "id0", "io.picolabs.persistent", "vars", "user"]));
-                    t.notOk(_.has(data, ["resultset", "io.picolabs.persistent", "vars", "appvar"]));
+                    t.notOk(_.has(data, entvar_path));
+                    t.notOk(_.has(data, appvar_path));
                     done();
                 });
             },

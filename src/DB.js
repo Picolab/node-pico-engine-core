@@ -104,7 +104,16 @@ module.exports = function(opts){
                 }
             }, function(err){
                 if(err)return callback(err);
-                ldb.batch(to_batch, callback);
+
+                dbRange(ldb, {
+                    prefix: ["entvars", id],
+                    values: false
+                }, function(key){
+                    to_batch.push({type: "del", key: key});
+                }, function(err){
+                    if(err)return callback(err);
+                    ldb.batch(to_batch, callback);
+                });
             });
         },
         newChannel: function(opts, callback){
@@ -140,7 +149,7 @@ module.exports = function(opts){
                 {type: "del", key: ["pico", pico_id, "ruleset", rid]},
             ];
             dbRange(ldb, {
-                prefix: ["pico", pico_id, rid],
+                prefix: ["entvars", pico_id, rid],
                 values: false,
             }, function(key){
                 ops.push({type: "del", key: key});
@@ -167,10 +176,10 @@ module.exports = function(opts){
             ldb.batch(ops, callback);
         },
         putEntVar: function(pico_id, rid, var_name, val, callback){
-            ldb.put(["pico", pico_id, rid, "vars", var_name], val, callback);
+            ldb.put(["entvars", pico_id, rid, var_name], val, callback);
         },
         getEntVar: function(pico_id, rid, var_name, callback){
-            ldb.get(["pico", pico_id, rid, "vars", var_name], function(err, data){
+            ldb.get(["entvars", pico_id, rid, var_name], function(err, data){
                 if(err && err.notFound){
                     return callback();
                 }
@@ -178,7 +187,7 @@ module.exports = function(opts){
             });
         },
         removeEntVar: function(pico_id, rid, var_name, callback){
-            ldb.del(["pico", pico_id, rid, "vars", var_name], callback);
+            ldb.del(["entvars", pico_id, rid, var_name], callback);
         },
         putAppVar: function(rid, var_name, val, callback){
             ldb.put(["appvars", rid, var_name], val, callback);

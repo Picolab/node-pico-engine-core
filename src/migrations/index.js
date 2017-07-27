@@ -9,4 +9,5 @@
  */
 module.exports = {
     "20170727T211511_appvars": require("./20170727T211511_appvars"),
+    "20170727T223943_entvars": require("./20170727T223943_entvars"),
 };

@@ -265,7 +265,7 @@ test("DB - deleteRuleset", function(t){
         delete expected_db.rulesets.krl[data.store_foo];
         delete expected_db.rulesets.url["file:///foo.krl"];
         delete expected_db.rulesets.versions["io.picolabs.foo"];
-        delete expected_db.resultset["io.picolabs.foo"];
+        delete expected_db.appvars["io.picolabs.foo"];
 
         t.notDeepEqual(expected_db, data.init_db, "sanity check");
         t.deepEquals(data.end_db, expected_db);
@@ -437,10 +437,10 @@ test("DB - removeRulesetFromPico", function(t){
         t.deepEquals(data.db_before, {
             pico: {
                 pico0: {
-                    rid0: {vars: {foo: "val0", bar: "val1"}},
                     ruleset: {rid0: {on: true}}
                 }
-            }
+            },
+            entvars: {pico0: {rid0: {foo: "val0", bar: "val1"}}}
         });
 
         t.deepEquals(data.db_after, {}, "should all be gone");

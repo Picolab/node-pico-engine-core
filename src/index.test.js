@@ -1399,6 +1399,16 @@ test("PicoEngine - io.picolabs.guard-conditions ruleset", function(t){
                 query("getB"),
                 3
             ],
+            [
+                signal("on_final_no_foreach", "a", {x: 42}),
+                [
+                    {name: "on_final_no_foreach", options: {x: 42}},
+                ]
+            ],
+            [
+                query("getB"),
+                42
+            ],
         ], t.end);
     });
 });

@@ -28,7 +28,6 @@ module.exports = {
         }
       },
       "body": function* (ctx, runAction, toPairs) {
-        var foreach_is_final = true;
         var foreach0_pairs = toPairs([
           1,
           2,
@@ -37,8 +36,7 @@ module.exports = {
         var foreach0_len = foreach0_pairs.length;
         var foreach0_i;
         for (foreach0_i = 0; foreach0_i < foreach0_len; foreach0_i++) {
-          foreach_is_final = true;
-          foreach_is_final = foreach_is_final && foreach0_i === foreach0_len - 1;
+          var foreach_is_final = foreach0_i === foreach0_len - 1;
           ctx.scope.set("x", foreach0_pairs[foreach0_i][1]);
           var fired = true;
           if (fired) {
@@ -71,7 +69,6 @@ module.exports = {
         }
       },
       "body": function* (ctx, runAction, toPairs) {
-        var foreach_is_final = true;
         var foreach0_pairs = toPairs({
           "a": 1,
           "b": 2,
@@ -80,8 +77,7 @@ module.exports = {
         var foreach0_len = foreach0_pairs.length;
         var foreach0_i;
         for (foreach0_i = 0; foreach0_i < foreach0_len; foreach0_i++) {
-          foreach_is_final = true;
-          foreach_is_final = foreach_is_final && foreach0_i === foreach0_len - 1;
+          var foreach_is_final = foreach0_i === foreach0_len - 1;
           ctx.scope.set("v", foreach0_pairs[foreach0_i][1]);
           ctx.scope.set("k", foreach0_pairs[foreach0_i][0]);
           var fired = true;
@@ -118,7 +114,6 @@ module.exports = {
         }
       },
       "body": function* (ctx, runAction, toPairs) {
-        var foreach_is_final = true;
         var foreach0_pairs = toPairs([
           1,
           2,
@@ -127,8 +122,6 @@ module.exports = {
         var foreach0_len = foreach0_pairs.length;
         var foreach0_i;
         for (foreach0_i = 0; foreach0_i < foreach0_len; foreach0_i++) {
-          foreach_is_final = true;
-          foreach_is_final = foreach_is_final && foreach0_i === foreach0_len - 1;
           ctx.scope.set("x", foreach0_pairs[foreach0_i][1]);
           var foreach1_pairs = toPairs([
             "a",
@@ -138,7 +131,7 @@ module.exports = {
           var foreach1_len = foreach1_pairs.length;
           var foreach1_i;
           for (foreach1_i = 0; foreach1_i < foreach1_len; foreach1_i++) {
-            foreach_is_final = foreach_is_final && foreach1_i === foreach1_len - 1;
+            var foreach_is_final = foreach0_i === foreach0_len - 1 && foreach1_i === foreach1_len - 1;
             ctx.scope.set("y", foreach1_pairs[foreach1_i][1]);
             var fired = true;
             if (fired) {
@@ -175,7 +168,6 @@ module.exports = {
         }
       },
       "body": function* (ctx, runAction, toPairs) {
-        var foreach_is_final = true;
         var foreach0_pairs = toPairs(yield ctx.applyFn(ctx.scope.get("doubleThis"), ctx, [[
             1,
             2,
@@ -184,14 +176,11 @@ module.exports = {
         var foreach0_len = foreach0_pairs.length;
         var foreach0_i;
         for (foreach0_i = 0; foreach0_i < foreach0_len; foreach0_i++) {
-          foreach_is_final = true;
-          foreach_is_final = foreach_is_final && foreach0_i === foreach0_len - 1;
           ctx.scope.set("arr", foreach0_pairs[foreach0_i][1]);
           var foreach1_pairs = toPairs(ctx.scope.get("arr"));
           var foreach1_len = foreach1_pairs.length;
           var foreach1_i;
           for (foreach1_i = 0; foreach1_i < foreach1_len; foreach1_i++) {
-            foreach_is_final = foreach_is_final && foreach1_i === foreach1_len - 1;
             ctx.scope.set("foo", foreach1_pairs[foreach1_i][1]);
             var foreach2_pairs = toPairs(yield ctx.callKRLstdlib("range", [
               0,
@@ -200,7 +189,7 @@ module.exports = {
             var foreach2_len = foreach2_pairs.length;
             var foreach2_i;
             for (foreach2_i = 0; foreach2_i < foreach2_len; foreach2_i++) {
-              foreach_is_final = foreach_is_final && foreach2_i === foreach2_len - 1;
+              var foreach_is_final = foreach0_i === foreach0_len - 1 && foreach1_i === foreach1_len - 1 && foreach2_i === foreach2_len - 1;
               ctx.scope.set("bar", foreach2_pairs[foreach2_i][1]);
               ctx.scope.set("baz", yield ctx.callKRLstdlib("*", [
                 ctx.scope.get("foo"),
@@ -243,7 +232,6 @@ module.exports = {
         }
       },
       "body": function* (ctx, runAction, toPairs) {
-        var foreach_is_final = true;
         var foreach0_pairs = toPairs(yield ctx.callKRLstdlib("split", [
           yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["x"]),
           ","
@@ -251,8 +239,6 @@ module.exports = {
         var foreach0_len = foreach0_pairs.length;
         var foreach0_i;
         for (foreach0_i = 0; foreach0_i < foreach0_len; foreach0_i++) {
-          foreach_is_final = true;
-          foreach_is_final = foreach_is_final && foreach0_i === foreach0_len - 1;
           ctx.scope.set("x", foreach0_pairs[foreach0_i][1]);
           var foreach1_pairs = toPairs(yield ctx.callKRLstdlib("split", [
             yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["y"]),
@@ -261,7 +247,7 @@ module.exports = {
           var foreach1_len = foreach1_pairs.length;
           var foreach1_i;
           for (foreach1_i = 0; foreach1_i < foreach1_len; foreach1_i++) {
-            foreach_is_final = foreach_is_final && foreach1_i === foreach1_len - 1;
+            var foreach_is_final = foreach0_i === foreach0_len - 1 && foreach1_i === foreach1_len - 1;
             ctx.scope.set("y", foreach1_pairs[foreach1_i][1]);
             var fired = true;
             if (fired) {
@@ -277,7 +263,7 @@ module.exports = {
               ctx.emit("debug", "fired");
             else
               ctx.emit("debug", "not fired");
-            if (foreach_is_final)
+            if (typeof foreach_is_final === "undefined" || foreach_is_final)
               yield ctx.raiseEvent({
                 "domain": "foreach",
                 "type": "final_raised",

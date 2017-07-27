@@ -532,5 +532,23 @@ module.exports = function(opts){
                 ldb.batch(to_batch, callback);
             });
         },
+        getMigrationLog: function(callback){
+            var log = {};
+            dbRange(ldb, {
+                prefix: ["migration-log"],
+            }, function(data){
+                log[data.key[1]] = data.value;
+            }, function(err){
+                callback(err, log);
+            });
+        },
+        recordMigration: function(version, callback){
+            ldb.put(["migration-log", version + ""], {
+                timestamp: (new Date()).toISOString(),
+            }, callback);
+        },
+        removeMigration: function(version, callback){
+            ldb.del(["migration-log", version + ""], callback);
+        },
     };
 };

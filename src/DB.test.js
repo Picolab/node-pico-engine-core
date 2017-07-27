@@ -566,3 +566,32 @@ test("DB - listAllEnabledRIDs", function(t){
         t.end();
     });
 });
+
+test("DB - migrations", function(t){
+    var db = mkTestDB();
+    async.series({
+        log0: async.apply(db.getMigrationLog),
+        write0: async.apply(db.recordMigration, "v1"),
+        log1: async.apply(db.getMigrationLog),
+        write1: async.apply(db.recordMigration, "v200"),
+        log2: async.apply(db.getMigrationLog),
+        del0: async.apply(db.removeMigration, "v200"),
+        log3: async.apply(db.getMigrationLog),
+        del1: async.apply(db.removeMigration, "v1"),
+        log4: async.apply(db.getMigrationLog),
+    }, function(err, data){
+        if(err) return t.end(err);
+
+        t.deepEquals(data.log0, {});
+
+        t.deepEquals(_.keys(data.log1), ["v1"]);
+        t.deepEquals(_.keys(data.log1["v1"]), ["timestamp"]);
+        t.equals(data.log1["v1"].timestamp, (new Date(data.log1["v1"].timestamp)).toISOString());
+
+        t.deepEquals(_.keys(data.log2), ["v1", "v200"]);
+        t.deepEquals(_.keys(data.log3), ["v1"]);
+        t.deepEquals(data.log4, {});
+
+        t.end();
+    });
+});

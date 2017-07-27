@@ -72,14 +72,17 @@ module.exports = function(opts){
                 callback(err, eci);
             });
         },
-        getPico: function(id, callback){
-            var pico = {};
-            dbRange(ldb, {
-                prefix: ["pico", id]
-            }, function(data){
-                _.set(pico, data.key, data.value);
-            }, function(err){
-                callback(err, _.get(pico, ["pico", id]));
+        hasPico: function(id, callback){
+            ldb.get(["pico", id], function(err){
+                if(err){
+                    if(err.notFound){
+                        callback(null, false);
+                        return;
+                    }
+                    callback(err);
+                    return;
+                }
+                callback(null, true);
             });
         },
         newPico: function(opts, callback){
@@ -139,6 +142,19 @@ module.exports = function(opts){
             ldb.batch(ops, function(err){
                 if(err) return callback(err);
                 callback(undefined, new_channel);
+            });
+        },
+        ridsOnPico: function(pico_id, callback){
+            var pico_rids = {};
+            dbRange(ldb, {
+                prefix: ["pico", pico_id, "ruleset"]
+            }, function(data){
+                var rid = data.key[3];
+                if(data.value && data.value.on === true){
+                    pico_rids[rid] = true;
+                }
+            }, function(err){
+                callback(err, pico_rids);
             });
         },
         addRulesetToPico: function(pico_id, rid, callback){

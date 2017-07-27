@@ -505,9 +505,9 @@ module.exports = function(conf){
         });
     };
     core.installRuleset = function(pico_id, rid, callback){
-        db.getPico(pico_id, function(err, pico){
+        db.hasPico(pico_id, function(err, has_pico){
             if(err) return callback(err);
-            if(!pico) return callback(new Error("Invalid pico_id: " + pico_id));
+            if(!has_pico) return callback(new Error("Invalid pico_id: " + pico_id));
 
             db.hasEnabledRid(rid, function(err, has){
                 if(err) return callback(err);

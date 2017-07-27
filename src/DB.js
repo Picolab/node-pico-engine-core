@@ -2,40 +2,13 @@ var _ = require("lodash");
 var cuid = require("cuid");
 var async = require("async");
 var crypto = require("crypto");
+var dbRange = require("./dbRange");
 var levelup = require("levelup");
 var bytewise = require("bytewise");
 var migrations = require("./migrations");
 var safeJsonCodec = require("level-json-coerce-null");
 var extractRulesetID = require("./extractRulesetID");
 
-var dbRange = function(ldb, opts, onData, callback_orig){
-    var has_calledback = false;
-    var callback = function(){
-        if(has_calledback) return;
-        has_calledback = true;
-        callback_orig.apply(this, arguments);
-    };
-
-    if(_.has(opts, "prefix")){
-        opts = _.assign({}, opts, {
-            gte: opts.prefix,
-            lte: opts.prefix.concat([undefined])//bytewise sorts with null at the bottom and undefined at the top
-        });
-        delete opts.prefix;
-    }
-    var s = ldb.createReadStream(opts);
-    var stopRange = function(){
-        s.destroy();
-        callback();
-    };
-    s.on("error", function(err){
-        callback(err);
-    });
-    s.on("end", callback);
-    s.on("data", function(data){
-        onData(data, stopRange);
-    });
-};
 
 module.exports = function(opts){
 
@@ -208,10 +181,10 @@ module.exports = function(opts){
             ldb.del(["pico", pico_id, rid, "vars", var_name], callback);
         },
         putAppVar: function(rid, var_name, val, callback){
-            ldb.put(["resultset", rid, "vars", var_name], val, callback);
+            ldb.put(["appvars", rid, var_name], val, callback);
         },
         getAppVar: function(rid, var_name, callback){
-            ldb.get(["resultset", rid, "vars", var_name], function(err, data){
+            ldb.get(["appvars", rid, var_name], function(err, data){
                 if(err && err.notFound){
                     return callback();
                 }
@@ -219,7 +192,7 @@ module.exports = function(opts){
             });
         },
         removeAppVar: function(rid, var_name, callback){
-            ldb.del(["resultset", rid, "vars", var_name], callback);
+            ldb.del(["appvars", rid, var_name], callback);
         },
         getStateMachineState: function(pico_id, rule, callback){
             var key = ["state_machine", pico_id, rule.rid, rule.name];
@@ -456,7 +429,7 @@ module.exports = function(opts){
                     if(err) return callback(err);
 
                     dbRange(ldb, {
-                        prefix: ["resultset", rid, "vars"],
+                        prefix: ["appvars", rid],
                         values: false
                     }, function(key){
                         to_del.push(key);

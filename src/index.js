@@ -556,7 +556,7 @@ module.exports = function(conf){
         newPico: db.newPico,
         newChannel: db.newChannel,
         removeChannel: db.removeChannel,
-        getOwnerECI: db.getOwnerECI,
+        getRootECI: db.getRootECI,
         installRuleset: core.installRuleset,
         uninstallRuleset: core.uninstallRuleset,
         removePico: db.removePico,

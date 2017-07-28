@@ -169,17 +169,17 @@ test("DB - read keys that don't exist", function(t){
     });
 });
 
-test("DB - getOwnerECI", function(t){
+test("DB - getRootECI", function(t){
     var db = mkTestDB();
 
     async.series({
-        eci_0: async.apply(db.getOwnerECI),
+        eci_0: async.apply(db.getRootECI),
         new_chan: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        eci_1: async.apply(db.getOwnerECI),
+        eci_1: async.apply(db.getRootECI),
         new_chan1: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
         new_chan2: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
         new_chan3: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        eci_2: async.apply(db.getOwnerECI),
+        eci_2: async.apply(db.getRootECI),
     }, function(err, data){
         if(err) return t.end(err);
         t.deepEquals(data.eci_0, undefined);

@@ -60,7 +60,7 @@ module.exports = function(opts){
                 callback(err, data);
             });
         },
-        getOwnerECI: function(callback){
+        getRootECI: function(callback){
             var eci = undefined;
             dbRange(ldb, {
                 prefix: ["channel"],

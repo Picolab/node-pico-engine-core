@@ -1936,34 +1936,40 @@ test("PicoEngine - io.picolabs.error rulesets", function(t){
                 void 0
             ],
 
-            [signal("error", "basic"), [
-                {name: "basic0", options: {}},
-                //NOTE basic1 should not execute b/c basic0 raised an error
+            [signal("error", "continue_on_error"), [
+                {name: "continue_on_errorA", options: {}},
+                {name: "continue_on_errorB", options: {}},
             ]],
 
             [signal("error", "stop_on_error"), [
-                {name: "stop_on_error", options: {}},
+                {name: "stop_on_errorA", options: {}},
+                //NOTE stop_on_errorB should not execute
+                //b/c stop_on_errorA raised an "error" that should stop it
             ]],
 
             [
                 query("getErrors"),
-                [
+                _.map([
                     null,
-                    {
-                        level: "info",
-                        msg: "some info error",
-                        error_rid: "io.picolabs.error",
-                        rule_name: "basic0",
-                        genus: "user",
-                    },
-                    {
-                        level: "info",
-                        msg: "stop_on_error 1",
-                        error_rid: "io.picolabs.error",
-                        rule_name: "stop_on_error",
-                        genus: "user",
-                    },
-                ]
+                    ["debug", "continue_on_errorA", "continue_on_errorA debug"],
+                    ["info", "continue_on_errorA", "continue_on_errorA info"],
+                    ["warn", "continue_on_errorA", "continue_on_errorA warn"],
+                    ["debug", "continue_on_errorB", "continue_on_errorB debug"],
+                    ["info", "continue_on_errorB", "continue_on_errorB info"],
+                    ["warn", "continue_on_errorB", "continue_on_errorB warn"],
+                    ["error", "stop_on_errorA", "stop_on_errorA 1"],
+                ], function(pair){
+                    if(pair){
+                        return {
+                            level: pair[0],
+                            data: pair[2],
+                            rid: "io.picolabs.error",
+                            rule_name: pair[1],
+                            genus: "user",
+                        };
+                    }
+                    return pair;
+                }),
             ],
 
         ], t.end);

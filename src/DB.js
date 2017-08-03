@@ -52,22 +52,21 @@ module.exports = function(opts){
             });
         },
         getPicoIDByECI: function(eci, callback){
-            ldb.get(["eci-to-pico_id", eci], function(err, data){
+            ldb.get(["channel", eci], function(err, data){
                 if(err && err.notFound){
                     err = new levelup.errors.NotFoundError("ECI not found: " + (_.isString(eci) ? eci : typeof eci));
                     err.notFound = true;
                 }
-                callback(err, data);
+                callback(err, data && data.pico_id);
             });
         },
         getRootECI: function(callback){
             var eci = undefined;
             dbRange(ldb, {
-                prefix: ["eci-to-pico_id"],
-                values: false,
+                prefix: ["channel"],
                 limit: 1
-            }, function(key){
-                eci = key[1];
+            }, function(data){
+                eci = data.value.id;
             }, function(err){
                 callback(err, eci);
             });
@@ -101,42 +100,48 @@ module.exports = function(opts){
                 values: false
             }, function(key){
                 to_batch.push({type: "del", key: key});
-                if(key[2] === "channel"){
-                    //remove this index
-                    to_batch.push({type: "del", key: ["eci-to-pico_id", key[3]]});
-                }
             }, function(err){
                 if(err)return callback(err);
 
                 dbRange(ldb, {
-                    prefix: ["entvars", id],
+                    prefix: ["pico-eci-list", id],
                     values: false
                 }, function(key){
+                    var eci = key[2];
                     to_batch.push({type: "del", key: key});
+                    to_batch.push({type: "del", key: ["channel", eci]});
                 }, function(err){
                     if(err)return callback(err);
-                    ldb.batch(to_batch, callback);
+
+                    dbRange(ldb, {
+                        prefix: ["entvars", id],
+                        values: false
+                    }, function(key){
+                        to_batch.push({type: "del", key: key});
+                    }, function(err){
+                        if(err)return callback(err);
+                        ldb.batch(to_batch, callback);
+                    });
                 });
             });
         },
         newChannel: function(opts, callback){
             var new_channel = {
                 id: newID(),
+                pico_id: opts.pico_id,
                 name: opts.name,
                 type: opts.type
             };
             var ops = [
                 {
-                    //the source of truth for a channel
                     type: "put",
-                    key: ["pico", opts.pico_id, "channel", new_channel.id],
-                    value: new_channel
+                    key: ["channel", new_channel.id],
+                    value: new_channel,
                 },
                 {
-                    //index to get pico_id by eci
                     type: "put",
-                    key: ["eci-to-pico_id", new_channel.id],
-                    value: opts.pico_id
+                    key: ["pico-eci-list", new_channel.pico_id, new_channel.id],
+                    value: true,
                 }
             ];
             ldb.batch(ops, function(err){
@@ -175,21 +180,29 @@ module.exports = function(opts){
             });
         },
         listChannels: function(pico_id, callback){
-            var channels = [];
+            var eci_list = [];
             dbRange(ldb, {
-                prefix: ["pico", pico_id, "channel"],
-            }, function(data){
-                channels.push(data.value);
+                prefix: ["pico-eci-list", pico_id],
+                values: false,
+            }, function(key){
+                eci_list.push(key[2]);
             }, function(err){
-                callback(err, channels);
+                if(err) return callback(err);
+                async.map(eci_list, function(eci, next){
+                    ldb.get(["channel", eci], next);
+                }, callback);
             });
         },
-        removeChannel: function(pico_id, eci, callback){
-            var ops = [
-                {type: "del", key: ["pico", pico_id, "channel", eci]},
-                {type: "del", key: ["eci-to-pico_id", eci]}
-            ];
-            ldb.batch(ops, callback);
+        removeChannel: function(eci, callback){
+            ldb.get(["channel", eci], function(err, data){
+                if(err) return callback(err);
+
+                var ops = [
+                    {type: "del", key: ["channel", eci]},
+                    {type: "del", key: ["pico-eci-list", data.pico_id, eci]}
+                ];
+                ldb.batch(ops, callback);
+            });
         },
         putEntVar: function(pico_id, rid, var_name, val, callback){
             ldb.put(["entvars", pico_id, rid, var_name], val, callback);

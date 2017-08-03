@@ -35,30 +35,34 @@ test("DB - write and read", function(t){
         t.deepEquals(data.start_db, {});
 
         t.deepEquals(data.end_db, {
-            "eci-to-pico_id": {
-                id1: "id0",
-                id2: "id0",
+            channel: {
+                id1: {
+                    pico_id: "id0",
+                    id: "id1",
+                    name: "one",
+                    type: "t",
+                },
+                id2: {
+                    pico_id: "id0",
+                    id: "id2",
+                    name: "two",
+                    type: "t"
+                },
             },
             pico: {
                 "id0": {
                     id: "id0",
-                    channel: {
-                        "id1": {
-                            id: "id1",
-                            name: "one",
-                            type: "t"
-                        },
-                        "id2": {
-                            id: "id2",
-                            name: "two",
-                            type: "t"
-                        }
-                    },
                     ruleset: {
                         "rs0": {on: true}
                     }
                 }
-            }
+            },
+            "pico-eci-list": {
+                "id0": {
+                    "id1": true,
+                    "id2": true,
+                },
+            },
         });
 
         t.deepEquals(data.post_del_db, {});
@@ -500,10 +504,10 @@ test("DB - listChannels", function(t){
         if(err) return t.end(err);
 
 
-        var c2 = {id: "id2", name: "two", type: "t2"};
-        var c3 = {id: "id3", name: "three", type: "t3"};
-        var c4 = {id: "id4", name: "four", type: "t4"};
-        var c5 = {id: "id5", name: "five", type: "t5"};
+        var c2 = {id: "id2", name: "two",   type: "t2", pico_id: "id0"};
+        var c3 = {id: "id3", name: "three", type: "t3", pico_id: "id1"};
+        var c4 = {id: "id4", name: "four",  type: "t4", pico_id: "id0"};
+        var c5 = {id: "id5", name: "five",  type: "t5", pico_id: "id1"};
 
 
         t.deepEquals(data.c2_p0, c2);

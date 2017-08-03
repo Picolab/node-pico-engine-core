@@ -624,13 +624,6 @@ test("PicoEngine - io.picolabs.engine ruleset", function(t){
                     if(err)return done(err);
                     t.deepEquals(data.pico.id2, {
                         id: "id2",
-                        channel: {
-                            id3: {
-                                id: "id3",
-                                name: "krl created chan",
-                                type: "some type?"
-                            }
-                        },
                         ruleset: {
                             "io.picolabs.meta": {on: true},
                             "io.picolabs.scope": {on: true},

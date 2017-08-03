@@ -62,11 +62,7 @@ module.exports = function(core){
         removeChannel: mkKRLfn([
             "eci",
         ], function(args, ctx, callback){
-            core.db.getPicoIDByECI(args.eci, function(err, pico_id){
-                if(err) return callback(err);
-
-                core.db.removeChannel(pico_id, args.eci, callback);
-            });
+            core.db.removeChannel(args.eci, callback);
         }),
         registerRuleset: mkKRLfn([
             "url",

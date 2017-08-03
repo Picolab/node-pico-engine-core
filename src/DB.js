@@ -52,7 +52,7 @@ module.exports = function(opts){
             });
         },
         getPicoIDByECI: function(eci, callback){
-            ldb.get(["channel", eci, "pico_id"], function(err, data){
+            ldb.get(["eci-to-pico_id", eci], function(err, data){
                 if(err && err.notFound){
                     err = new levelup.errors.NotFoundError("ECI not found: " + (_.isString(eci) ? eci : typeof eci));
                     err.notFound = true;
@@ -63,7 +63,7 @@ module.exports = function(opts){
         getRootECI: function(callback){
             var eci = undefined;
             dbRange(ldb, {
-                prefix: ["channel"],
+                prefix: ["eci-to-pico_id"],
                 values: false,
                 limit: 1
             }, function(key){
@@ -103,7 +103,7 @@ module.exports = function(opts){
                 to_batch.push({type: "del", key: key});
                 if(key[2] === "channel"){
                     //remove this index
-                    to_batch.push({type: "del", key: ["channel", key[3], "pico_id"]});
+                    to_batch.push({type: "del", key: ["eci-to-pico_id", key[3]]});
                 }
             }, function(err){
                 if(err)return callback(err);
@@ -135,7 +135,7 @@ module.exports = function(opts){
                 {
                     //index to get pico_id by eci
                     type: "put",
-                    key: ["channel", new_channel.id, "pico_id"],
+                    key: ["eci-to-pico_id", new_channel.id],
                     value: opts.pico_id
                 }
             ];
@@ -187,7 +187,7 @@ module.exports = function(opts){
         removeChannel: function(pico_id, eci, callback){
             var ops = [
                 {type: "del", key: ["pico", pico_id, "channel", eci]},
-                {type: "del", key: ["channel", eci, "pico_id"]}
+                {type: "del", key: ["eci-to-pico_id", eci]}
             ];
             ldb.batch(ops, callback);
         },

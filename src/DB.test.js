@@ -35,9 +35,9 @@ test("DB - write and read", function(t){
         t.deepEquals(data.start_db, {});
 
         t.deepEquals(data.end_db, {
-            channel: {
-                id1: {pico_id: "id0"},
-                id2: {pico_id: "id0"}
+            "eci-to-pico_id": {
+                id1: "id0",
+                id2: "id0",
             },
             pico: {
                 "id0": {

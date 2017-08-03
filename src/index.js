@@ -565,8 +565,6 @@ module.exports = function(conf){
         getEntVar: db.getEntVar,
         removeEntVar: db.removeEntVar,
 
-        checkAndRunMigrations: db.checkAndRunMigrations,
-
         dbDump: db.toObj,
     };
     if(conf.___core_testing_mode){
@@ -575,9 +573,14 @@ module.exports = function(conf){
     }
 
     pe.start = function(callback){
-        registerAllEnabledRulesets(function(err){
+        db.checkAndRunMigrations(function(err){
             if(err) return callback(err);
-            resumeScheduler(callback);
+
+            registerAllEnabledRulesets(function(err){
+                if(err) return callback(err);
+
+                resumeScheduler(callback);
+            });
         });
     };
 

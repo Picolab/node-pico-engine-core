@@ -12,4 +12,5 @@ module.exports = {
     "20170727T223943_entvars": require("./20170727T223943_entvars"),
     "20170803T211131_eci-to-pico_id": require("./20170803T211131_eci-to-pico_id"),
     "20170803T214146_channel": require("./20170803T214146_channel"),
+    "20170804T214426_pico-ruleset": require("./20170804T214426_pico-ruleset"),
 };

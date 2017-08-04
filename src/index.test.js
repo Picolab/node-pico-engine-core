@@ -622,13 +622,27 @@ test("PicoEngine - io.picolabs.engine ruleset", function(t){
             function(done){
                 pe.dbDump(function(err, data){
                     if(err)return done(err);
-                    t.deepEquals(data.pico.id2, {
-                        id: "id2",
-                        ruleset: {
+                    t.deepEquals(data["pico-ruleset"], {
+                        "id0": {
+                            "io.picolabs.engine": {on: true},
+                        },
+                        "id2": {
                             "io.picolabs.meta": {on: true},
                             "io.picolabs.scope": {on: true},
                         }
                     });
+                    done();
+                });
+            },
+            function(done){
+                pe.dbDump(function(err, data){
+                    if(err)return done(err);
+                    t.deepEquals(data.channel.id3, {
+                        id: "id3",
+                        name: "krl created chan",
+                        pico_id: "id2",
+                        type: "some type?",
+                    }, "channel is there before");
                     done();
                 });
             },
@@ -641,14 +655,7 @@ test("PicoEngine - io.picolabs.engine ruleset", function(t){
             function(done){
                 pe.dbDump(function(err, data){
                     if(err)return done(err);
-                    t.deepEquals(data.pico.id2, {
-                        id: "id2",
-                        //channel: {}, channel is removed
-                        ruleset: {
-                            "io.picolabs.meta": {on: true},
-                            "io.picolabs.scope": {on: true},
-                        }
-                    });
+                    t.deepEquals(data.channel.id3, void 0, "channel has been removed");
                     done();
                 });
             },

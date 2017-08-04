@@ -95,34 +95,33 @@ module.exports = function(opts){
         },
         removePico: function(id, callback){
             var to_batch = [];
-            dbRange(ldb, {
-                prefix: ["pico", id],
-                values: false
-            }, function(key){
-                to_batch.push({type: "del", key: key});
-            }, function(err){
-                if(err)return callback(err);
 
-                dbRange(ldb, {
-                    prefix: ["pico-eci-list", id],
-                    values: false
-                }, function(key){
+            var keyRange = function(prefix, fn){
+                return async.apply(dbRange, ldb, {
+                    prefix: prefix,
+                    values: false,
+                }, fn);
+            };
+
+            async.series([
+                keyRange(["pico", id], function(key){
+                    to_batch.push({type: "del", key: key});
+                }),
+                keyRange(["pico-eci-list", id], function(key){
                     var eci = key[2];
                     to_batch.push({type: "del", key: key});
                     to_batch.push({type: "del", key: ["channel", eci]});
-                }, function(err){
-                    if(err)return callback(err);
-
-                    dbRange(ldb, {
-                        prefix: ["entvars", id],
-                        values: false
-                    }, function(key){
-                        to_batch.push({type: "del", key: key});
-                    }, function(err){
-                        if(err)return callback(err);
-                        ldb.batch(to_batch, callback);
-                    });
-                });
+                }),
+                keyRange(["entvars", id], function(key){
+                    to_batch.push({type: "del", key: key});
+                }),
+                keyRange(["pico-ruleset", id], function(key){
+                    to_batch.push({type: "del", key: key});
+                    to_batch.push({type: "del", key: ["ruleset-pico", key[2], key[1]]});
+                }),
+            ], function(err){
+                if(err)return callback(err);
+                ldb.batch(to_batch, callback);
             });
         },
         newChannel: function(opts, callback){
@@ -152,9 +151,9 @@ module.exports = function(opts){
         ridsOnPico: function(pico_id, callback){
             var pico_rids = {};
             dbRange(ldb, {
-                prefix: ["pico", pico_id, "ruleset"]
+                prefix: ["pico-ruleset", pico_id]
             }, function(data){
-                var rid = data.key[3];
+                var rid = data.key[2];
                 if(data.value && data.value.on === true){
                     pico_rids[rid] = true;
                 }
@@ -163,11 +162,26 @@ module.exports = function(opts){
             });
         },
         addRulesetToPico: function(pico_id, rid, callback){
-            ldb.put(["pico", pico_id, "ruleset", rid], {on: true}, callback);
+            var val = {
+                on: true,
+            };
+            ldb.batch([
+                {
+                    type: "put",
+                    key: ["pico-ruleset", pico_id, rid],
+                    value: val,
+                },
+                {
+                    type: "put",
+                    key: ["ruleset-pico", rid, pico_id],
+                    value: val,
+                }
+            ], callback);
         },
         removeRulesetFromPico: function(pico_id, rid, callback){
             var ops = [
-                {type: "del", key: ["pico", pico_id, "ruleset", rid]},
+                {type: "del", key: ["pico-ruleset", pico_id, rid]},
+                {type: "del", key: ["ruleset-pico", rid, pico_id]},
             ];
             dbRange(ldb, {
                 prefix: ["entvars", pico_id, rid],
@@ -418,16 +432,11 @@ module.exports = function(opts){
         isRulesetUsed: function(rid, callback){
             var is_used = false;
             dbRange(ldb, {
-                prefix: ["pico"],
-                values: false
-            }, function(key, stopRange){
-                if(is_used){
-                    throw new Error("dbRange should have stopped");
-                }
-                if(key[2] === "ruleset" && key[3] === rid){
-                    is_used = true;
-                    stopRange();
-                }
+                prefix: ["ruleset-pico", rid],
+                values: false,
+                limit: 1,
+            }, function(key){
+                is_used = true;
             }, function(err){
                 callback(err, is_used);
             });

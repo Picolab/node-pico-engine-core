@@ -52,11 +52,10 @@ test("DB - write and read", function(t){
             pico: {
                 "id0": {
                     id: "id0",
-                    ruleset: {
-                        "rs0": {on: true}
-                    }
                 }
             },
+            "pico-ruleset": {"id0": {"rs0": {on: true}}},
+            "ruleset-pico": {"rs0": {"id0": {on: true}}},
             "pico-eci-list": {
                 "id0": {
                     "id1": true,
@@ -439,12 +438,9 @@ test("DB - removeRulesetFromPico", function(t){
         if(err) return t.end(err);
 
         t.deepEquals(data.db_before, {
-            pico: {
-                pico0: {
-                    ruleset: {rid0: {on: true}}
-                }
-            },
-            entvars: {pico0: {rid0: {foo: "val0", bar: "val1"}}}
+            entvars: {pico0: {rid0: {foo: "val0", bar: "val1"}}},
+            "pico-ruleset": {"pico0": {"rid0": {on: true}}},
+            "ruleset-pico": {"rid0": {"pico0": {on: true}}},
         });
 
         t.deepEquals(data.db_after, {}, "should all be gone");

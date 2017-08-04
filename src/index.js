@@ -547,16 +547,17 @@ module.exports = function(conf){
 
         signalEvent: core.signalEvent,
         runQuery: core.runQuery,
+        getRootECI: db.getRootECI,
 
+        /////////////////////
+        // vvv deprecated vvv
         registerRuleset: core.registerRuleset,
         registerRulesetURL: core.registerRulesetURL,
         flushRuleset: core.flushRuleset,
         unregisterRuleset: core.unregisterRuleset,
 
-        newPico: db.newPico,
         newChannel: db.newChannel,
         removeChannel: db.removeChannel,
-        getRootECI: db.getRootECI,
         installRuleset: core.installRuleset,
         uninstallRuleset: core.uninstallRuleset,
         removePico: db.removePico,
@@ -566,22 +567,40 @@ module.exports = function(conf){
         removeEntVar: db.removeEntVar,
 
         dbDump: db.toObj,
+        /////////////////////
+        // ^^^ deprecated ^^^
     };
     if(conf.___core_testing_mode){
+        pe.newPico = db.newPico;
         pe.scheduler = core.scheduler;
         pe.modules = modules;
     }
 
     pe.start = function(callback){
-        db.checkAndRunMigrations(function(err){
-            if(err) return callback(err);
-
-            registerAllEnabledRulesets(function(err){
-                if(err) return callback(err);
-
-                resumeScheduler(callback);
-            });
-        });
+        async.series([
+            function(next){
+                if(conf.___core_testing_mode){
+                    return next();
+                }
+                db.getRootECI(function(err, eci){
+                    if(err) return next(err);
+                    if(eci){
+                        return next();
+                    }
+                    db.newPico({}, function(err, pico){
+                        if(err) return next(err);
+                        db.newChannel({
+                            pico_id: pico.id,
+                            name: "root",
+                            type: "secret",
+                        }, next);
+                    });
+                });
+            },
+            db.checkAndRunMigrations,
+            registerAllEnabledRulesets,
+            resumeScheduler,
+        ], callback);
     };
 
     return pe;

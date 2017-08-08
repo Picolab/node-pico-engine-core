@@ -46,6 +46,7 @@ module.exports = function(conf){
         }
     });
     var host = conf.host;
+    var rootRIDs = _.uniq(_.filter(conf.rootRIDs, _.isString));
     var compileAndLoadRuleset = conf.compileAndLoadRuleset;
 
     var core = {
@@ -547,7 +548,8 @@ module.exports = function(conf){
 
         signalEvent: core.signalEvent,
         runQuery: core.runQuery,
-        getRootECI: db.getRootECI,
+
+        getRootPico: db.getRootPico,
 
         /////////////////////
         // vvv deprecated vvv
@@ -579,12 +581,13 @@ module.exports = function(conf){
     pe.start = function(callback){
         async.series([
             function(next){
-                if(conf.___core_testing_mode){
+                if(_.isEmpty(rootRIDs)){
                     return next();
                 }
-                db.getRootECI(function(err, eci){
-                    if(err) return next(err);
-                    if(eci){
+                db.getRootPico(function(err, root_pico){
+                    if(err && ! err.notFound){
+                        return next(err);
+                    }else if(!err){
                         return next();
                     }
                     db.newPico({}, function(err, pico){
@@ -593,6 +596,35 @@ module.exports = function(conf){
                             pico_id: pico.id,
                             name: "root",
                             type: "secret",
+                        }, function(err, chan){
+                            if(err) return next(err);
+                            db.putRootPico({
+                                id: pico.id,
+                                eci: chan.id,
+                            }, next);
+                        });
+                    });
+                });
+            },
+            function(next){
+                if(_.isEmpty(rootRIDs)){
+                    return next();
+                }
+                db.getRootPico(function(err, root_pico){
+                    if(err) return next(err);
+
+                    db.ridsOnPico(root_pico.id, function(err, rids){
+                        if(err) return next(err);
+
+                        var to_install = [];
+                        _.each(rootRIDs, function(r_rid){
+                            if( ! _.includes(rids, r_rid)){
+                                to_install.push(r_rid);
+                            }
+                        });
+
+                        async.eachSeries(to_install, function(rid, next){
+                            core.installRuleset(root_pico.id, rid, next);
                         }, next);
                     });
                 });

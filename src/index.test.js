@@ -2146,3 +2146,32 @@ test("PicoEngine - startup ruleset dependency ordering", function(t){
         });
     });
 });
+
+
+test("PicoEngine - root pico creation", function(t){
+    mkTestPicoEngine({
+        rootRIDs: [
+            "io.picolabs.hello_world",
+        ],
+    }, function(err, pe){
+        if(err)return t.end(err);
+
+        pe.dbDump(function(err, db){
+            if(err)return t.end(err);
+
+
+            t.deepEquals(db.root_pico, {
+                id: "id0",
+                eci: "id1",
+            });
+            t.deepEquals(db.pico, {"id0": {id: "id0"}});
+            t.deepEquals(_.keys(db.channel), ["id1"]);
+
+            t.deepEquals(_.keys(db["pico-ruleset"]["id0"]), [
+                "io.picolabs.hello_world",
+            ]);
+
+            t.end();
+        });
+    });
+});

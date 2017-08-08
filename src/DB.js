@@ -60,16 +60,11 @@ module.exports = function(opts){
                 callback(err, data && data.pico_id);
             });
         },
-        getRootECI: function(callback){
-            var eci = undefined;
-            dbRange(ldb, {
-                prefix: ["channel"],
-                limit: 1
-            }, function(data){
-                eci = data.value.id;
-            }, function(err){
-                callback(err, eci);
-            });
+        getRootPico: function(callback){
+            ldb.get(["root_pico"], callback);
+        },
+        putRootPico: function(data, callback){
+            ldb.put(["root_pico"], data, callback);
         },
         hasPico: function(id, callback){
             ldb.get(["pico", id], function(err){

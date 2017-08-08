@@ -172,24 +172,42 @@ test("DB - read keys that don't exist", function(t){
     });
 });
 
-test("DB - getRootECI", function(t){
+test("DB - getRootPico", function(t){
     var db = mkTestDB();
 
-    async.series({
-        eci_0: async.apply(db.getRootECI),
-        new_chan: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        eci_1: async.apply(db.getRootECI),
-        new_chan1: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        new_chan2: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        new_chan3: async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
-        eci_2: async.apply(db.getRootECI),
-    }, function(err, data){
-        if(err) return t.end(err);
-        t.deepEquals(data.eci_0, undefined);
-        t.deepEquals(data.eci_1, "id0");
-        t.deepEquals(data.eci_2, "id0");
-        t.end();
-    });
+    var tstRoot = function(assertFn){
+        return function(next){
+            db.getRootPico(function(err, r_pico){
+                assertFn(err, r_pico);
+                next();
+            });
+        };
+    };
+
+    async.series([
+        tstRoot(function(err, r_pico){
+            t.ok(err);
+            t.ok(err.notFound);
+            t.deepEquals(r_pico, void 0);
+        }),
+        async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
+        async.apply(db.newPico, {}),
+        tstRoot(function(err, r_pico){
+            t.ok(err);
+            t.ok(err.notFound);
+            t.deepEquals(r_pico, void 0);
+        }),
+        async.apply(db.putRootPico, {id: "1234", eci: "5678"}),
+        tstRoot(function(err, r_pico){
+            t.notOk(err);
+            t.deepEquals(r_pico, {id: "1234", eci: "5678"});
+        }),
+        async.apply(db.putRootPico, {id: "foo", eci: "bar"}),
+        tstRoot(function(err, r_pico){
+            t.notOk(err);
+            t.deepEquals(r_pico, {id: "foo", eci: "bar"});
+        }),
+    ], t.end);
 });
 
 test("DB - isRulesetUsed", function(t){

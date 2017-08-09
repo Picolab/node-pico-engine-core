@@ -23,7 +23,7 @@ _.each(fs.readdirSync(test_dir), function(file){
 
 module.exports = function(opts, callback){
     opts = opts || {};
-    PicoEngine({
+    var pe = PicoEngine({
         host: "https://test-host",
         allow_event_time_override: true,
         ___core_testing_mode: true,
@@ -41,12 +41,9 @@ module.exports = function(opts, callback){
                 };
             }())
         }
-    }, function(err, pe){
+    });
+    pe.start(function(err){
         if(err)return callback(err);
-        if(opts.dont_register_rulesets){
-            callback(void 0, pe);
-            return;
-        }
         λ.each.series(_.keys(test_rulesets), function(rid, next){
             //hack since compileAndLoadRuleset doesn't actually compile
             var krl_src = "ruleset " + rid + "{}";

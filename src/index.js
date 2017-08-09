@@ -2,20 +2,33 @@ var _ = require("lodash");
 var λ = require("contra");
 var DB = require("./DB");
 var cocb = require("co-callback");
+var cuid = require("cuid");
 var getArg = require("./getArg");
 var hasArg = require("./hasArg");
 var runKRL = require("./runKRL");
 var Modules = require("./modules");
 var PicoQueue = require("./PicoQueue");
 var Scheduler = require("./Scheduler");
+var runAction = require("./runAction");
+var cleanEvent = require("./cleanEvent");
 var krl_stdlib = require("krl-stdlib");
 var getKRLByURL = require("./getKRLByURL");
 var SymbolTable = require("symbol-table");
 var EventEmitter = require("events");
 var processEvent = require("./processEvent");
 var processQuery = require("./processQuery");
-var processAction = require("./processAction");
 var RulesetRegistry = require("./RulesetRegistry");
+var DependencyResolver = require("dependency-resolver");
+
+var applyFn = cocb.wrap(function*(fn, ctx, args){
+    if(!_.isFunction(fn)){
+        throw new Error("Not a function");
+    }
+    if(fn.is_a_defaction){
+        throw new Error("actions can only be called in the rule action block");
+    }
+    return yield fn(ctx, args);
+});
 
 var log_levels = {
     "info": true,
@@ -24,7 +37,7 @@ var log_levels = {
     "error": true,
 };
 
-module.exports = function(conf, callback){
+module.exports = function(conf){
     var db = DB(conf.db);
     _.each(db, function(val, key){
         if(_.isFunction(val)){
@@ -51,7 +64,15 @@ module.exports = function(conf, callback){
             };
         }(ctx.rid));//pass in the rid at mkCTX creation so it is not later mutated
 
+        if(ctx.event){
+            ctx.txn_id = ctx.event.txn_id;
+        }
+        if(ctx.query){
+            ctx.txn_id = ctx.query.txn_id;
+        }
+
         ctx.modules = modules;
+        ctx.applyFn = applyFn;
         var pushCTXScope = function(ctx2){
             return mkCTX(_.assign({}, ctx2, {
                 rid: ctx.rid,//keep your original rid
@@ -69,14 +90,11 @@ module.exports = function(conf, callback){
         };
         ctx.defaction = function(ctx, name, fn){
             var actionFn = cocb.wrap(function*(ctx2, args){
-                var ctx3 = pushCTXScope(ctx2);
-                var action_block = yield fn(ctx3, function(name, index){
+                return yield fn(pushCTXScope(ctx2), function(name, index){
                     return getArg(args, name, index);
                 }, function(name, index){
                     return hasArg(args, name, index);
-                });
-                var r = yield processAction(ctx3, action_block);
-                return r.returns;
+                }, runAction);
             });
             actionFn.is_a_defaction = true;
             return ctx.scope.set(name, actionFn);
@@ -84,9 +102,8 @@ module.exports = function(conf, callback){
 
         ctx.emit = function(type, val, message){//for stdlib
             var info = {};
-            if(ctx.rid){
-                info.rid = ctx.rid;
-            }
+            info.rid = ctx.rid;
+            info.txn_id = ctx.txn_id;
             if(ctx.pico_id){
                 info.pico_id = ctx.pico_id;
             }
@@ -115,7 +132,13 @@ module.exports = function(conf, callback){
                     info.eci = ctx.query.eci;
                 }
             }
-            emitter.emit(type, info, val, message);
+            if(type === "error"){
+                //the Error object, val, should be first
+                // b/c node "error" event conventions, so you don't strange messages thinking `info` is the error
+                emitter.emit("error", val, info, message);
+            }else{
+                emitter.emit(type, info, val, message);
+            }
         };
         ctx.log = function(level, val){
             if(!_.has(log_levels, level)){
@@ -124,9 +147,12 @@ module.exports = function(conf, callback){
             //this 'log-' prefix distinguishes user declared log events from other system generated events
             ctx.emit("log-" + level, val);
         };
-        ctx.callKRLstdlib = function(fn_name){
-            var args = _.toArray(arguments);
-            args[0] = ctx;
+        ctx.callKRLstdlib = function(fn_name, args){
+            if(_.isArray(args)){
+                args = [ctx].concat(args);
+            }else{
+                args[0] = ctx;
+            }
             var fn = krl_stdlib[fn_name];
             if(cocb.isGeneratorFunction(fn)){
                 return cocb.promiseRun(function*(){
@@ -148,18 +174,8 @@ module.exports = function(conf, callback){
     };
     core.mkCTX = mkCTX;
 
-    var initializeRulest = cocb.wrap(function*(rs, loadDepRS){
+    var initializeRulest = cocb.wrap(function*(rs){
         rs.scope = SymbolTable();
-        var ctx = mkCTX({
-            rid: rs.rid,
-            scope: rs.scope
-        });
-        if(_.isFunction(rs.meta && rs.meta.configure)){
-            yield runKRL(rs.meta.configure, ctx);
-        }
-        if(_.isFunction(rs.global)){
-            yield runKRL(rs.global, ctx);
-        }
         rs.modules_used = {};
         var use_array = _.values(rs.meta && rs.meta.use);
         var i, use, dep_rs, ctx2;
@@ -168,7 +184,7 @@ module.exports = function(conf, callback){
             if(use.kind !== "module"){
                 throw new Error("Unsupported 'use' kind: " + use.kind);
             }
-            dep_rs = loadDepRS(use.rid);
+            dep_rs = core.rsreg.get(use.rid);
             if(!dep_rs){
                 throw new Error("Dependant module not loaded: " + use.rid);
             }
@@ -191,14 +207,24 @@ module.exports = function(conf, callback){
             rs.modules_used[use.alias] = {
                 rid: use.rid,
                 scope: ctx2.scope,
-                provides: dep_rs.meta.provides
+                provides: _.get(dep_rs, ["meta", "provides"], []),
             };
             core.rsreg.provideKey(rs.rid, use.rid);
         }
+        var ctx = mkCTX({
+            rid: rs.rid,
+            scope: rs.scope
+        });
+        if(_.isFunction(rs.meta && rs.meta.configure)){
+            yield runKRL(rs.meta.configure, ctx);
+        }
+        if(_.isFunction(rs.global)){
+            yield runKRL(rs.global, ctx);
+        }
     });
 
-    var initializeAndEngageRuleset = function(rs, loadDepRS, callback){
-        cocb.run(initializeRulest(rs, loadDepRS), function(err){
+    var initializeAndEngageRuleset = function(rs, callback){
+        cocb.run(initializeRulest(rs), function(err){
             if(err) return callback(err);
 
             core.rsreg.put(rs);
@@ -227,22 +253,23 @@ module.exports = function(conf, callback){
     };
 
     core.registerRuleset = function(krl_src, meta_data, callback){
-        db.storeRuleset(krl_src, meta_data, function(err, hash){
+        db.storeRuleset(krl_src, meta_data, function(err, data){
             if(err) return callback(err);
             compileAndLoadRuleset({
+                rid: data.rid,
                 src: krl_src,
-                hash: hash
+                hash: data.hash
             }, function(err, rs){
                 if(err) return callback(err);
-                db.enableRuleset(hash, function(err){
+                db.enableRuleset(data.hash, function(err){
                     if(err) return callback(err);
-                    initializeAndEngageRuleset(rs, core.rsreg.get, function(err){
+                    initializeAndEngageRuleset(rs, function(err){
                         if(err){
                             db.disableRuleset(rs.rid, _.noop);//undo enable if failed
                         }
                         callback(err, {
                             rid: rs.rid,
-                            hash: hash
+                            hash: data.hash
                         });
                     });
                 });
@@ -250,104 +277,151 @@ module.exports = function(conf, callback){
         });
     };
 
-    var picoQ = PicoQueue(function(pico_id, data, callback){
-        if(data.type === "event"){
-            var event = data.event;
+    var picoQ = PicoQueue(function(pico_id, job, callback){
+        //now handle the next `job` on the pico queue
+        if(job.type === "event"){
+            var event = job.event;
             event.timestamp = new Date(event.timestamp);//convert from JSON string to date
             processEvent(core, mkCTX({
                 event: event,
                 pico_id: pico_id
-            }), function(err, data){
-                if(err) return callback(err);
-                if(_.has(data, "event:send")){
-                    _.each(data["event:send"], function(o){
-                        signalEvent(o.event);
-                    });
-                    data = _.omit(data, "event:send");
-                }
-                callback(void 0, data);
-            });
-        }else if(data.type === "query"){
+            }), callback);
+        }else if(job.type === "query"){
             processQuery(core, mkCTX({
-                query: data.query,
+                query: job.query,
                 pico_id: pico_id
             }), callback);
         }else{
-            callback(new Error("invalid PicoQueue type:" + data.type));
+            callback(new Error("invalid PicoQueue job.type:" + job.type));
         }
     });
 
-    var signalEvent = function(event_orig, callback){
-        //ensure that event is not mutated
-        var event = _.cloneDeep(event_orig);//TODO optimize
-        if(!_.isDate(event.timestamp) || !conf.allow_event_time_override){
-            event.timestamp = new Date();
+    var enqueueForECI = function(eci, job, onEnqueued, callback){
+        db.getPicoIDByECI(eci, function(err, pico_id){
+            if(err) return callback(err);
+            picoQ.enqueue(pico_id, job, callback);
+            onEnqueued(pico_id);
+        });
+    };
+
+    core.signalEvent = function(event_orig, callback_orig){
+        var callback = _.isFunction(callback_orig) ? callback_orig : _.noop;
+        var event;
+        try{
+            //validate + normalize event, and make sure is not mutated
+            event = cleanEvent(event_orig);
+        }catch(err){
+            emitter.emit("error", err);
+            callback(err);
+            return;
         }
+
+        if(event.eid === "none"){
+            event.eid = cuid();
+        }
+        event.timestamp = conf.allow_event_time_override && _.isDate(event_orig.timestamp)
+            ? event_orig.timestamp
+            : new Date();
+
+        event.txn_id = cuid();
 
         var emit = mkCTX({event: event}).emit;
         emit("episode_start");
         emit("debug", "event received: " + event.domain + "/" + event.type);
 
-        if(!_.isFunction(callback)){
-            //if interal signalEvent or just no callback was given...
-            callback = function(err, resp){
-                if(err){
-                    emit("error", err);
-                }else{
-                    emit("debug", resp);
-                }
-            };
-        }
-
-        db.getPicoIDByECI(event.eci, function(err, pico_id){
-            if(err) return callback(err);
-            picoQ.enqueue(pico_id, {
-                type: "event",
-                event: event
-            }, callback);
+        enqueueForECI(event.eci, {
+            type: "event",
+            event: event
+        }, function(pico_id){
+            emit = mkCTX({
+                event: event,
+                pico_id: pico_id,
+            }).emit;
             emit("debug", "event added to pico queue: " + pico_id);
+        }, function(err, data){
+            if(err){
+                emit("error", err);
+            }else{
+                emit("debug", data);
+            }
+            //there should be no more emits after "episode_stop"
+            emit("episode_stop");
+            callback(err, data);
         });
     };
 
-    var runQuery = function(query_orig, callback){
+    core.runQuery = function(query_orig, callback_orig){
+        var callback = _.isFunction(callback_orig) ? callback_orig : _.noop;
+
         //ensure that query is not mutated
         var query = _.cloneDeep(query_orig);//TODO optimize
+
+        if(!_.isString(query && query.eci)){
+            var err = new Error("missing query.eci");
+            emitter.emit("error", err);
+            callback(err);
+            return;
+        }
+
+        query.timestamp = new Date();
+        query.txn_id = cuid();
+
         var emit = mkCTX({query: query}).emit;
         emit("episode_start");
         emit("debug", "query received: " + query.rid + "/" + query.name);
 
-        db.getPicoIDByECI(query.eci, function(err, pico_id){
-            if(err) return callback(err);
-            var emit = mkCTX({
+        enqueueForECI(query.eci, {
+            type: "query",
+            query: query
+        }, function(pico_id){
+            emit = mkCTX({
                 query: query,
                 pico_id: pico_id,
             }).emit;
-            picoQ.enqueue(pico_id, {
-                type: "query",
-                query: query
-            }, function(err, data){
-                emit("episode_stop");
-                callback(err, data);
-            });
             emit("debug", "query added to pico queue: " + pico_id);
+        }, function(err, data){
+            if(err){
+                emit("error", err);
+            }else{
+                emit("debug", data);
+            }
+            //there should be no more emits after "episode_stop"
+            emit("episode_stop");
+            callback(err, data);
         });
     };
 
     var registerAllEnabledRulesets = function(callback){
         db.listAllEnabledRIDs(function(err, rids){
             if(err)return callback(err);
+            if(_.isEmpty(rids)){
+                callback();
+                return;
+            }
             λ.map(rids, getRulesetForRID, function(err, rs_list){
                 if(err)return callback(err);
+
+                var resolver = new DependencyResolver();
+
                 var rs_by_rid = {};
                 _.each(rs_list, function(rs){
                     rs_by_rid[rs.rid] = rs;
+
+                    resolver.add(rs.rid);
+                    _.each(rs.meta && rs.meta.use, function(use){
+                        if(use.kind === "module"){
+                            resolver.setDependency(rs.rid, use.rid);
+                        }
+                    });
                 });
-                var loadDepRS = function(rid){
+
+                //order they need to be loaded in for dependencies to work
+                var rid_order = resolver.sort();
+                rs_list = _.map(rid_order, function(rid){
                     return rs_by_rid[rid];
-                };
-                λ.each.series(rs_list, function(rs, next){
-                    initializeAndEngageRuleset(rs, loadDepRS, next);
-                }, callback);
+                });
+
+                λ.each.series(rs_list, initializeAndEngageRuleset, callback);
             });
         });
     };
@@ -381,12 +455,10 @@ module.exports = function(conf, callback){
         db: db,
         onError: function(err){
             var info = {scheduler: true};
-            emitter.emit("error", info, err);
+            emitter.emit("error", err, info);
         },
-        onEvent: function(event, callback){
-            signalEvent(event);
-            //signal event then immediately continue on so schedule doesn't block
-            callback();
+        onEvent: function(event){
+            core.signalEvent(event);
         },
         is_test_mode: !!conf.___core_testing_mode,
     });
@@ -425,47 +497,62 @@ module.exports = function(conf, callback){
         db.removeRulesetFromPico(pico_id, rid, callback);
     };
 
-    registerAllEnabledRulesets(function(err){
-        if(err) return callback(err);
-        var pe = {
-            emitter: emitter,
-
-            signalEvent: signalEvent,
-            runQuery: runQuery,
-
-            registerRuleset: core.registerRuleset,
-            registerRulesetURL: core.registerRulesetURL,
-            flushRuleset: core.flushRuleset,
-            unregisterRuleset: core.unregisterRuleset,
-
-            newPico: db.newPico,
-            newChannel: db.newChannel,
-            removeChannel: db.removeChannel,
-            getOwnerECI: db.getOwnerECI,
-            installRuleset: core.installRuleset,
-            uninstallRuleset: core.uninstallRuleset,
-            removePico: db.removePico,
-
-            putEntVar: db.putEntVar,
-            getEntVar: db.getEntVar,
-            removeEntVar: db.removeEntVar,
-
-            dbDump: db.toObj,
-        };
-        if(conf.___core_testing_mode){
-            pe.scheduler = core.scheduler;
-            pe.modules = modules;
-        }
-        //restart "cron"
+    var resumeScheduler = function(callback){
         db.listScheduled(function(err, vals){
             if(err) return callback(err);
+
+            //resume the cron tasks
             _.each(vals, function(val){
                 if(!_.isString(val.timespec)){
                     return;
                 }
                 core.scheduler.addCron(val.timespec, val.id, val.event);
             });
-            callback(void 0, pe);
+
+            //resume `schedule .. at` queue
+            core.scheduler.update();
+
+            callback();
         });
-    });
+    };
+
+
+    var pe = {
+        emitter: emitter,
+
+        signalEvent: core.signalEvent,
+        runQuery: core.runQuery,
+
+        registerRuleset: core.registerRuleset,
+        registerRulesetURL: core.registerRulesetURL,
+        flushRuleset: core.flushRuleset,
+        unregisterRuleset: core.unregisterRuleset,
+
+        newPico: db.newPico,
+        newChannel: db.newChannel,
+        removeChannel: db.removeChannel,
+        getOwnerECI: db.getOwnerECI,
+        installRuleset: core.installRuleset,
+        uninstallRuleset: core.uninstallRuleset,
+        removePico: db.removePico,
+
+        putEntVar: db.putEntVar,
+        getEntVar: db.getEntVar,
+        removeEntVar: db.removeEntVar,
+
+        dbDump: db.toObj,
+    };
+    if(conf.___core_testing_mode){
+        pe.scheduler = core.scheduler;
+        pe.modules = modules;
+    }
+
+    pe.start = function(callback){
+        registerAllEnabledRulesets(function(err){
+            if(err) return callback(err);
+            resumeScheduler(callback);
+        });
+    };
+
+    return pe;
 };

@@ -101,11 +101,24 @@ test("PicoEngine - hello_world ruleset", function(t){
                 rid: "io.picolabs.hello_world",
                 name: "hello",
                 args: {obj: "Bob"}
-            })
+            }),
+
+            error_event: function(next){
+                pe.emitter.once("error", function(err){
+                    t.equals(err+"", "Error: missing event.eci");
+                });
+                pe.signalEvent({}, function(err){
+                    t.equals(err + "", "Error: missing event.eci");
+                    next();
+                });
+            },
 
         }, function(err, data){
             if(err) return t.end(err);
 
+            var txn_path = ["directives", 0, "meta", "txn_id"];
+            t.ok(/^c[^\s]+$/.test(_.get(data.hello_event, txn_path)));
+            _.set(data.hello_event, txn_path, "TXN_ID");
             t.deepEquals(data.hello_event, {
                 directives: [
                     {
@@ -117,7 +130,7 @@ test("PicoEngine - hello_world ruleset", function(t){
                             eid: "1234",
                             rid: "io.picolabs.hello_world",
                             rule_name: "say_hello",
-                            txn_id: "TODO"
+                            txn_id: "TXN_ID"
                         }
                     }
                 ]
@@ -269,10 +282,7 @@ test("PicoEngine - io.picolabs.events ruleset", function(t){
                 signal("events", "on_choose", {thing: "one"}),
                 [{name: "on_choose - one", options: {}}]
             ],
-            [
-                query("getOnChooseFired"),
-                true
-            ],
+            [query("getOnChooseFired"), true],
             [
                 signal("events", "on_choose", {thing: "two"}),
                 [{name: "on_choose - two", options: {}}]
@@ -281,10 +291,42 @@ test("PicoEngine - io.picolabs.events ruleset", function(t){
                 signal("events", "on_choose", {thing: "wat?"}),
                 []
             ],
+            [query("getOnChooseFired"), true],//still true even though no match
             [
-                query("getOnChooseFired"),
-                false
+                signal("events", "on_choose_if", {fire: "no", thing: "one"}),
+                []//condition failed
             ],
+            [query("getOnChooseFired"), false],// b/c condition failed
+            [
+                signal("events", "on_choose_if", {fire: "yes", thing: "one"}),
+                [{name: "on_choose_if - one", options: {}}]
+            ],
+            [query("getOnChooseFired"), true],
+            [
+                signal("events", "on_choose_if", {fire: "yes", thing: "wat?"}),
+                []
+            ],
+            [query("getOnChooseFired"), true],// b/c condition true
+            function(next){
+                signal("events", "on_sample")(function(err, resp){
+                    if(err) return next(err);
+                    t.equals(_.size(resp.directives), 1, "only one action should be sampled");
+                    t.ok(/^on_sample - (one|two|three)$/.test(_.head(resp.directives).name));
+                    next();
+                });
+            },
+            [
+                signal("events", "on_sample_if"),
+                []//nothing b/c it did not fire
+            ],
+            function(next){
+                signal("events", "on_sample_if", {fire: "yes"})(function(err, resp){
+                    if(err) return next(err);
+                    t.equals(_.size(resp.directives), 1, "only one action should be sampled");
+                    t.ok(/^on_sample - (one|two|three)$/.test(_.head(resp.directives).name));
+                    next();
+                });
+            },
             [
                 signal("events", "select_where", {something: "wat?"}),
                 [{name: "select_where", options: {}}]
@@ -409,7 +451,7 @@ test("PicoEngine - io.picolabs.operators ruleset", function(t){
                 {
                     "str_as_num": 100.25,
                     "num_as_str": "1.05",
-                    "regex_as_str": "blah",
+                    "regex_as_str": "re#blah#i",
                     "isnull": [
                         false,
                         false,
@@ -469,7 +511,7 @@ test("PicoEngine - io.picolabs.chevron ruleset", function(t){
             λ.curry(pe.installRuleset, "id0", "io.picolabs.chevron"),
             [
                 query("d"),
-                "\n      hi 1 + 2 = 3\n      <h1>some<b>html</b></h1>\n    "
+                "\n            hi 1 + 2 = 3\n            <h1>some<b>html</b></h1>\n        "
             ]
         ], t.end);
     });
@@ -646,7 +688,7 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
                 [{name: "dflt_info", options: {info: {
                     name: "Bob",
                     memo: void 0,//there is nothing stored in that `ent` var on this pico
-                    privateFn: "privateFn = name: Bob memo: undefined"
+                    privateFn: "privateFn = name: Bob memo: null"
                 }}}]
             ],
             [
@@ -654,7 +696,7 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
                 [{name: "conf_info", options: {info: {
                     name: "Jim",
                     memo: void 0,//there is nothing stored in that `ent` var on this pico
-                    privateFn: "privateFn = name: Jim memo: undefined"
+                    privateFn: "privateFn = name: Jim memo: null"
                 }}}]
             ],
 
@@ -788,7 +830,7 @@ test("PicoEngine - io.picolabs.meta ruleset", function(t){
                     rid: "io.picolabs.meta",
                     host: "https://test-host",
                     rulesetName: "testing meta module",
-                    rulesetDescription: "\nsome description for the meta test module\n    ",
+                    rulesetDescription: "\nsome description for the meta test module\n        ",
                     rulesetAuthor: "meta author",
                     rulesetURI: "https://raw.githubusercontent.com/Picolab/node-pico-engine-core/master/test-rulesets/meta.krl",
                     ruleName: "meta_event",
@@ -803,7 +845,7 @@ test("PicoEngine - io.picolabs.meta ruleset", function(t){
                     rid: "io.picolabs.meta",
                     host: "https://test-host",
                     rulesetName: "testing meta module",
-                    rulesetDescription: "\nsome description for the meta test module\n    ",
+                    rulesetDescription: "\nsome description for the meta test module\n        ",
                     rulesetAuthor: "meta author",
                     rulesetURI: "https://raw.githubusercontent.com/Picolab/node-pico-engine-core/master/test-rulesets/meta.krl",
                     ruleName: void 0,
@@ -1379,10 +1421,20 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                 signal("defa", "bar_setting", {}),
                 [{name: "bar", options: {a: "baz", b: "qux", c: "quux"}}]
             ],
-            [
-                query("getSettingVal"),
-                [{name: "bar", type: "directive", options: {a: "baz", b: "qux", c: "quux"},  meta: {eid: "1234", rid: "io.picolabs.defaction", rule_name: "bar_setting", txn_id: "TODO"}}]
-            ],
+            function(next){
+                query("getSettingVal")(function(err, data){
+                    if(err) return next(err);
+
+                    data.meta.txn_id = "TXN_ID";
+                    t.deepEquals(data, {
+                        name: "bar",
+                        type: "directive",
+                        options: {a: "baz", b: "qux", c: "quux"},
+                        meta: {eid: "1234", rid: "io.picolabs.defaction", rule_name: "bar_setting", txn_id: "TXN_ID"},
+                    });
+                    next();
+                });
+            },
             [
                 signal("defa", "chooser", {val: "asdf"}),
                 [{name: "foo", options: {a: "asdf", b: 5}}]
@@ -1408,9 +1460,49 @@ test("PicoEngine - io.picolabs.defaction ruleset", function(t){
                 {type: "directive", name: "add", options: {resp: 3}}
             ],
             function(next){
+                pe.emitter.once("error", function(err, info){
+                    t.equals(err + "", "Error: `add` is not defined as an action");
+                    t.equals(info.eci, "id1");
+                });
                 signal("defa", "add")(function(err, resp){
                     t.equals(err + "", "Error: `add` is not defined as an action");
                     t.notOk(resp);
+                    next();
+                });
+            },
+            [
+                signal("defa", "returns"),
+                [{name: "wat:whereinthe", options: {b: 333}}]
+            ],
+            [
+                query("getSettingVal"),
+                ["where", "in", "the", "wat:whereinthe 433"]
+            ],
+            [
+                signal("defa", "scope"),
+                []
+            ],
+            [
+                query("getSettingVal"),
+                ["aint", "no", "echo", null, "send wat? noop returned: null"]
+            ],
+            function(next){
+                pe.emitter.once("error", function(err, info){
+                    t.equals(err + "", "Error: actions can only be called in the rule action block");
+                    t.equals(info.eci, "id1");
+                });
+                signal("defa", "trying_to_use_action_as_fn")(function(err){
+                    t.equals(err + "", "Error: actions can only be called in the rule action block");
+                    next();
+                });
+            },
+            function(next){
+                pe.emitter.once("error", function(err, info){
+                    t.equals(err + "", "Error: actions can only be called in the rule action block");
+                    t.equals(info.eci, "id1");
+                });
+                query("echoAction")(function(err){
+                    t.equals(err + "", "Error: actions can only be called in the rule action block");
                     next();
                 });
             },
@@ -1466,6 +1558,9 @@ test("PicoEngine - io.picolabs.key* rulesets", function(t){
 
         var qError = function(q, error_msg){
             return function(next){
+                pe.emitter.once("error", function(err){
+                    t.equals(err+"", error_msg);
+                });
                 q(function(err, resp){
                     t.equals(err+"", error_msg);
                     next();
@@ -1484,6 +1579,9 @@ test("PicoEngine - io.picolabs.key* rulesets", function(t){
             [query1("getFoo"), "foo key just a string"],
             [query2("getFoo"), "foo key just a string"],
             qError(query3("getFoo"), "Error: keys:foo not defined"),//b/c used3 never requires it
+
+            //keys:* should work directly in global block
+            [query1("foo_global"), "foo key just a string"],
 
             [query1("getBar"), {baz: "baz subkey for bar key", qux: "qux subkey for bar key"}],
             [query1("getBarN", {name: "baz"}), "baz subkey for bar key"],
@@ -1822,7 +1920,7 @@ test("PicoEngine - io.picolabs.error rulesets", function(t){
 });
 
 test("PicoEngine - (re)registering ruleset shouldn't mess up state", function(t){
-    PicoEngine({
+    var pe = PicoEngine({
         host: "https://test-host",
         ___core_testing_mode: true,
         compileAndLoadRuleset: function(rs_info, callback){
@@ -1846,7 +1944,8 @@ test("PicoEngine - (re)registering ruleset shouldn't mess up state", function(t)
                 };
             }())
         }
-    }, function(err, pe){
+    });
+    pe.start(function(err){
         if(err)return t.end(err);
 
         var krl_0 = "ruleset foo.rid {rule aa {select when foo all} rule bb {select when foo all}}";
@@ -1882,6 +1981,110 @@ test("PicoEngine - (re)registering ruleset shouldn't mess up state", function(t)
                 "rule selected: foo.rid -> bb",
             ]);
 
+            t.end();
+        });
+    });
+});
+
+test("PicoEngine - io.picolabs.test-error-messages", function(t){
+    mkTestPicoEngine({}, function(err, pe){
+        if(err)return t.end(err);
+
+        var qError = function(q, error_msg, is_notFound){
+            return function(next){
+                pe.emitter.once("error", function(err){
+                    t.equals(err+"", error_msg);
+                    t.equals(err.notFound || false, is_notFound);
+                });
+                pe.runQuery(q, function(err, resp){
+                    t.equals(err+"", error_msg);
+                    t.equals(err.notFound || false, is_notFound);
+                    t.notOk(resp);
+                    next();
+                });
+            };
+        };
+
+        λ.series([
+            λ.curry(pe.newPico, {}),
+            λ.curry(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
+            λ.curry(pe.installRuleset, "id0", "io.picolabs.test-error-messages"),
+
+            qError(void 0, "Error: missing query.eci", false),
+
+            qError({eci: null}, "Error: missing query.eci", false),
+
+            qError({eci: "foo"}, "NotFoundError: ECI not found: foo", true),
+            qError({
+                eci: "id1",
+                rid: "not-an-rid",
+                name: "hello",
+                args: {obj: "Bob"}
+            }, "Error: Pico does not have that rid: not-an-rid", false),
+            qError({
+                eci: "id1",
+                rid: "io.picolabs.test-error-messages",
+                name: "zzz",
+                args: {obj: "Bob"}
+            }, "Error: Not shared: zzz", false),
+            qError({
+                eci: "id1",
+                rid: "io.picolabs.test-error-messages",
+                name: "somethingNotDefined",
+                args: {obj: "Bob"}
+            }, "Error: Shared, but not defined: somethingNotDefined", true),
+        ], t.end);
+    });
+});
+
+test("PicoEngine - startup ruleset dependency ordering", function(t){
+
+    var memdb = memdown(cuid());//db to share between to engine instances
+
+    var mkPE = function(){
+        return PicoEngine({
+            host: "https://test-host",
+            ___core_testing_mode: true,
+            compileAndLoadRuleset: function(rs_info, callback){
+                var js;
+                try{
+                    var js_src = compiler(rs_info.src, {
+                        inline_source_map: true
+                    }).code;
+                    js = eval(js_src);
+                }catch(err){
+                    return callback(err);
+                }
+                callback(null, js);
+            },
+            db: {
+                db: function(){return memdb;},
+            }
+        });
+    };
+
+    //create a blank engine
+    var pe = mkPE();
+    //register some krl that has inter-dependencies
+    λ.each.series([
+        "ruleset D {}",
+        "ruleset E {}",
+        "ruleset C {meta{use module D use module E}}",
+        "ruleset B {meta{use module C use module E}}",
+        "ruleset A {meta{use module B use module D}}",
+    ], function(src, next){
+        pe.registerRuleset(src, {}, next);
+    }, function(err){
+        if(err)return t.end(err);
+
+        t.ok(true, "registered the ruleset successfully");
+
+        //now the engine shuts down, and starts up again
+        pe = mkPE();
+        pe.start(function(err){
+            //if the dependencies aren't loaded in the correct order it will blow up
+            if(err)return t.end(err);
+            t.ok(true, "restarted successfully");
             t.end();
         });
     });

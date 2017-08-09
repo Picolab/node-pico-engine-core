@@ -24,27 +24,43 @@ module.exports = {
     ctx.scope.set("add", ctx.KRLClosure(function* (ctx, getArg, hasArg) {
       ctx.scope.set("a", getArg("a", 0));
       ctx.scope.set("b", getArg("b", 1));
-      return yield ctx.callKRLstdlib("+", ctx.scope.get("a"), ctx.scope.get("b"));
+      return yield ctx.callKRLstdlib("+", [
+        ctx.scope.get("a"),
+        ctx.scope.get("b")
+      ]);
     }));
     ctx.scope.set("sum", ctx.KRLClosure(function* (ctx, getArg, hasArg) {
       ctx.scope.set("arr", getArg("arr", 0));
-      return yield ctx.callKRLstdlib("reduce", ctx.scope.get("arr"), ctx.scope.get("add"), 0);
+      return yield ctx.callKRLstdlib("reduce", [
+        ctx.scope.get("arr"),
+        ctx.scope.get("add"),
+        0
+      ]);
     }));
     ctx.scope.set("incByN", ctx.KRLClosure(function* (ctx, getArg, hasArg) {
       ctx.scope.set("n", getArg("n", 0));
       return ctx.KRLClosure(function* (ctx, getArg, hasArg) {
         ctx.scope.set("a", getArg("a", 0));
-        return yield ctx.callKRLstdlib("+", ctx.scope.get("a"), ctx.scope.get("n"));
+        return yield ctx.callKRLstdlib("+", [
+          ctx.scope.get("a"),
+          ctx.scope.get("n")
+        ]);
       });
     }));
     ctx.scope.set("mapped", yield ctx.callKRLstdlib("map", [
-      1,
-      2,
-      3
-    ], ctx.KRLClosure(function* (ctx, getArg, hasArg) {
-      ctx.scope.set("n", getArg("n", 0));
-      return yield ctx.callKRLstdlib("+", ctx.scope.get("n"), ctx.scope.get("g1"));
-    })));
+      [
+        1,
+        2,
+        3
+      ],
+      ctx.KRLClosure(function* (ctx, getArg, hasArg) {
+        ctx.scope.set("n", getArg("n", 0));
+        return yield ctx.callKRLstdlib("+", [
+          ctx.scope.get("n"),
+          ctx.scope.get("g1")
+        ]);
+      })
+    ]));
   },
   "rules": {
     "eventex": {
@@ -58,7 +74,7 @@ module.exports = {
         },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -84,15 +100,18 @@ module.exports = {
           ]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", {
-                "0": "say",
-                "name": ctx.scope.get("my_name")
-              });
-            }
-          }]
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "say",
+            { "name": ctx.scope.get("my_name") }
+          ], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "prelude_scope": {
@@ -101,7 +120,7 @@ module.exports = {
         "graph": { "scope": { "prelude": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -118,31 +137,28 @@ module.exports = {
             ]]
         }
       },
-      "prelude": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
         ctx.scope.set("p0", "prelude 0");
         ctx.scope.set("p1", "prelude 1");
-      },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", {
-                "0": "say",
-                "name": ctx.scope.get("name"),
-                "p0": ctx.scope.get("p0"),
-                "p1": ctx.scope.get("p1"),
-                "g0": ctx.scope.get("g0")
-              });
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "say",
+            {
+              "name": ctx.scope.get("name"),
+              "p0": ctx.scope.get("p0"),
+              "p1": ctx.scope.get("p1"),
+              "g0": ctx.scope.get("g0")
             }
-          }]
-      },
-      "postlude": {
-        "fired": undefined,
-        "notfired": undefined,
-        "always": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "ent_var_name", ctx.scope.get("name"));
-          yield ctx.modules.set(ctx, "ent", "ent_var_p0", ctx.scope.get("p0"));
-          yield ctx.modules.set(ctx, "ent", "ent_var_p1", ctx.scope.get("p1"));
+          ], []);
         }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        yield ctx.modules.set(ctx, "ent", "ent_var_name", ctx.scope.get("name"));
+        yield ctx.modules.set(ctx, "ent", "ent_var_p0", ctx.scope.get("p0"));
+        yield ctx.modules.set(ctx, "ent", "ent_var_p1", ctx.scope.get("p1"));
       }
     },
     "functions": {
@@ -161,24 +177,27 @@ module.exports = {
             ]]
         }
       },
-      "prelude": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
         ctx.scope.set("g0", "overrided g0!");
-        ctx.scope.set("inc5", yield ctx.scope.get("incByN")(ctx, [5]));
-      },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", {
-                "0": "say",
-                "add_one_two": yield ctx.scope.get("add")(ctx, [
-                  1,
-                  2
-                ]),
-                "inc5_3": yield ctx.scope.get("inc5")(ctx, [3]),
-                "g0": ctx.scope.get("g0")
-              });
+        ctx.scope.set("inc5", yield ctx.applyFn(ctx.scope.get("incByN"), ctx, [5]));
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "say",
+            {
+              "add_one_two": yield ctx.applyFn(ctx.scope.get("add"), ctx, [
+                1,
+                2
+              ]),
+              "inc5_3": yield ctx.applyFn(ctx.scope.get("inc5"), ctx, [3]),
+              "g0": ctx.scope.get("g0")
             }
-          }]
+          ], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     }
   }

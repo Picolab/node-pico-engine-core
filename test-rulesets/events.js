@@ -29,7 +29,7 @@ module.exports = {
         "graph": { "events": { "bind": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -46,15 +46,18 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", {
-                "0": "bound",
-                "name": ctx.scope.get("my_name")
-              });
-            }
-          }]
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "bound",
+            { "name": ctx.scope.get("my_name") }
+          ], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "set_attr2": {
@@ -63,7 +66,7 @@ module.exports = {
         "graph": { "events": { "set_attr2": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[
                 [
                   "number",
                   new RegExp("[Nn]0*(\\d*)", "")
@@ -87,16 +90,21 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", {
-                "0": "set_attr2",
-                "number": ctx.scope.get("number"),
-                "name": ctx.scope.get("name")
-              });
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "set_attr2",
+            {
+              "number": ctx.scope.get("number"),
+              "name": ctx.scope.get("name")
             }
-          }]
+          ], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "get_attr": {
@@ -115,18 +123,19 @@ module.exports = {
             ]]
         }
       },
-      "prelude": function* (ctx) {
-        ctx.scope.set("thing", yield (yield ctx.modules.get(ctx, "event", "attr"))(ctx, ["thing"]));
-      },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", {
-                "0": "get",
-                "thing": ctx.scope.get("thing")
-              });
-            }
-          }]
+      "body": function* (ctx, runAction, toPairs) {
+        ctx.scope.set("thing", yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["thing"]));
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "get",
+            { "thing": ctx.scope.get("thing") }
+          ], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "noop": {
@@ -144,6 +153,13 @@ module.exports = {
               "end"
             ]]
         }
+      },
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "noop2": {
@@ -162,12 +178,15 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "noop", []);
-            }
-          }]
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "noop", [], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "ifthen": {
@@ -176,7 +195,7 @@ module.exports = {
         "graph": { "events": { "ifthen": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -193,15 +212,15 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "condition": function* (ctx) {
-          return ctx.scope.get("my_name");
-        },
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["ifthen"]);
-            }
-          }]
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = ctx.scope.get("my_name");
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["ifthen"], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "on_fired": {
@@ -210,7 +229,7 @@ module.exports = {
         "graph": { "events": { "on_fired": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -227,22 +246,21 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", {
-                "0": "on_fired",
-                "previous_name": yield ctx.modules.get(ctx, "ent", "on_fired_prev_name")
-              });
-            }
-          }]
-      },
-      "postlude": {
-        "fired": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "on_fired",
+            { "previous_name": yield ctx.modules.get(ctx, "ent", "on_fired_prev_name") }
+          ], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
           yield ctx.modules.set(ctx, "ent", "on_fired_prev_name", ctx.scope.get("my_name"));
-        },
-        "notfired": undefined,
-        "always": undefined
+        }
       }
     },
     "on_choose": {
@@ -251,7 +269,7 @@ module.exports = {
         "graph": { "events": { "on_choose": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "thing",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -268,34 +286,78 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "block_type": "choose",
-        "condition": function* (ctx) {
-          return ctx.scope.get("thing");
-        },
-        "actions": [
-          {
-            "label": "one",
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["on_choose - one"]);
-            }
-          },
-          {
-            "label": "two",
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["on_choose - two"]);
-            }
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          switch (ctx.scope.get("thing")) {
+          case "one":
+            yield runAction(ctx, void 0, "send_directive", ["on_choose - one"], []);
+            break;
+          case "two":
+            yield runAction(ctx, void 0, "send_directive", ["on_choose - two"], []);
+            break;
           }
-        ]
-      },
-      "postlude": {
-        "fired": function* (ctx) {
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
           yield ctx.modules.set(ctx, "ent", "on_choose_fired", true);
-        },
-        "notfired": function* (ctx) {
+        }
+        if (!fired) {
           yield ctx.modules.set(ctx, "ent", "on_choose_fired", false);
+        }
+      }
+    },
+    "on_choose_if": {
+      "name": "on_choose_if",
+      "select": {
+        "graph": { "events": { "on_choose_if": { "expr_0": true } } },
+        "eventexprs": {
+          "expr_0": function* (ctx, aggregateEvent) {
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
+                  "thing",
+                  new RegExp("^(.*)$", "")
+                ]]]);
+            if (!matches)
+              return false;
+            ctx.scope.set("thing", matches[0]);
+            return true;
+          }
         },
-        "always": undefined
+        "state_machine": {
+          "start": [[
+              "expr_0",
+              "end"
+            ]]
+        }
+      },
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = yield ctx.callKRLstdlib("==", [
+          yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["fire"]),
+          "yes"
+        ]);
+        if (fired) {
+          switch (ctx.scope.get("thing")) {
+          case "one":
+            yield runAction(ctx, void 0, "send_directive", ["on_choose_if - one"], []);
+            break;
+          case "two":
+            yield runAction(ctx, void 0, "send_directive", ["on_choose_if - two"], []);
+            break;
+          }
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
+          yield ctx.modules.set(ctx, "ent", "on_choose_fired", true);
+        }
+        if (!fired) {
+          yield ctx.modules.set(ctx, "ent", "on_choose_fired", false);
+        }
       }
     },
     "on_every": {
@@ -314,19 +376,93 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [
-          {
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["on_every - one"]);
-            }
-          },
-          {
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["on_every - two"]);
-            }
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["on_every - one"], []);
+          yield runAction(ctx, void 0, "send_directive", ["on_every - two"], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+      }
+    },
+    "on_sample": {
+      "name": "on_sample",
+      "select": {
+        "graph": { "events": { "on_sample": { "expr_0": true } } },
+        "eventexprs": {
+          "expr_0": function* (ctx, aggregateEvent) {
+            return true;
           }
-        ]
+        },
+        "state_machine": {
+          "start": [[
+              "expr_0",
+              "end"
+            ]]
+        }
+      },
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          switch (Math.floor(Math.random() * 3)) {
+          case 0:
+            yield runAction(ctx, void 0, "send_directive", ["on_sample - one"], []);
+            break;
+          case 1:
+            yield runAction(ctx, void 0, "send_directive", ["on_sample - two"], []);
+            break;
+          case 2:
+            yield runAction(ctx, void 0, "send_directive", ["on_sample - three"], []);
+            break;
+          }
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+      }
+    },
+    "on_sample_if": {
+      "name": "on_sample_if",
+      "select": {
+        "graph": { "events": { "on_sample_if": { "expr_0": true } } },
+        "eventexprs": {
+          "expr_0": function* (ctx, aggregateEvent) {
+            return true;
+          }
+        },
+        "state_machine": {
+          "start": [[
+              "expr_0",
+              "end"
+            ]]
+        }
+      },
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = yield ctx.callKRLstdlib("==", [
+          yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["fire"]),
+          "yes"
+        ]);
+        if (fired) {
+          switch (Math.floor(Math.random() * 3)) {
+          case 0:
+            yield runAction(ctx, void 0, "send_directive", ["on_sample - one"], []);
+            break;
+          case 1:
+            yield runAction(ctx, void 0, "send_directive", ["on_sample - two"], []);
+            break;
+          case 2:
+            yield runAction(ctx, void 0, "send_directive", ["on_sample - three"], []);
+            break;
+          }
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "select_where": {
@@ -335,7 +471,10 @@ module.exports = {
         "graph": { "events": { "select_where": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            if (!(yield ctx.callKRLstdlib("match", yield (yield ctx.modules.get(ctx, "event", "attr"))(ctx, ["something"]), new RegExp("^wat", ""))))
+            if (!(yield ctx.callKRLstdlib("match", [
+                yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attr"), ctx, ["something"]),
+                new RegExp("^wat", "")
+              ])))
               return false;
             return true;
           }
@@ -347,12 +486,15 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["select_where"]);
-            }
-          }]
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["select_where"], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "no_action": {
@@ -361,7 +503,7 @@ module.exports = {
         "graph": { "events": { "no_action": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "fired",
                   new RegExp("^yes$", "i")
                 ]]]);
@@ -377,14 +519,18 @@ module.exports = {
             ]]
         }
       },
-      "postlude": {
-        "fired": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
           yield ctx.modules.set(ctx, "ent", "no_action_fired", true);
-        },
-        "notfired": function* (ctx) {
+        }
+        if (!fired) {
           yield ctx.modules.set(ctx, "ent", "no_action_fired", false);
-        },
-        "always": undefined
+        }
       }
     },
     "action_send": {
@@ -393,7 +539,7 @@ module.exports = {
         "graph": { "events": { "action_send": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -410,18 +556,21 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, "event", "send", [{
-                  "eci": yield ctx.modules.get(ctx, "meta", "eci"),
-                  "eid": "0",
-                  "domain": "events",
-                  "type": "store_sent_name",
-                  "attrs": { "name": ctx.scope.get("my_name") }
-                }]);
-            }
-          }]
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, "event", "send", [{
+              "eci": yield ctx.modules.get(ctx, "meta", "eci"),
+              "eid": "0",
+              "domain": "events",
+              "type": "store_sent_name",
+              "attrs": { "name": ctx.scope.get("my_name") }
+            }], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     },
     "store_sent_name": {
@@ -430,7 +579,7 @@ module.exports = {
         "graph": { "events": { "store_sent_name": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -447,13 +596,16 @@ module.exports = {
             ]]
         }
       },
-      "postlude": {
-        "fired": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "sent_attrs", yield (yield ctx.modules.get(ctx, "event", "attrs"))(ctx, []));
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
+          yield ctx.modules.set(ctx, "ent", "sent_attrs", yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrs"), ctx, []));
           yield ctx.modules.set(ctx, "ent", "sent_name", ctx.scope.get("my_name"));
-        },
-        "notfired": undefined,
-        "always": undefined
+        }
       }
     },
     "raise_set_name": {
@@ -462,7 +614,7 @@ module.exports = {
         "graph": { "events": { "raise_set_name": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -479,17 +631,20 @@ module.exports = {
             ]]
         }
       },
-      "postlude": {
-        "fired": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
           yield ctx.raiseEvent({
             "domain": "events",
             "type": "store_sent_name",
             "attributes": { "name": ctx.scope.get("my_name") },
             "for_rid": undefined
           });
-        },
-        "notfired": undefined,
-        "always": undefined
+        }
       }
     },
     "raise_set_name_attr": {
@@ -498,7 +653,7 @@ module.exports = {
         "graph": { "events": { "raise_set_name_attr": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -515,17 +670,20 @@ module.exports = {
             ]]
         }
       },
-      "postlude": {
-        "fired": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
           yield ctx.raiseEvent({
             "domain": "events",
             "type": "store_sent_name",
             "attributes": { "name": ctx.scope.get("my_name") },
             "for_rid": undefined
           });
-        },
-        "notfired": undefined,
-        "always": undefined
+        }
       }
     },
     "raise_set_name_rid": {
@@ -534,7 +692,7 @@ module.exports = {
         "graph": { "events": { "raise_set_name_rid": { "expr_0": true } } },
         "eventexprs": {
           "expr_0": function* (ctx, aggregateEvent) {
-            var matches = yield (yield ctx.modules.get(ctx, "event", "attrMatches"))(ctx, [[[
+            var matches = yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrMatches"), ctx, [[[
                   "name",
                   new RegExp("^(.*)$", "")
                 ]]]);
@@ -551,20 +709,21 @@ module.exports = {
             ]]
         }
       },
-      "prelude": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
         ctx.scope.set("rid", "io.picolabs.events");
-      },
-      "postlude": {
-        "fired": function* (ctx) {
+        var fired = true;
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
           yield ctx.raiseEvent({
             "domain": "events",
             "type": "store_sent_name",
             "attributes": { "name": ctx.scope.get("my_name") },
             "for_rid": ctx.scope.get("rid")
           });
-        },
-        "notfired": undefined,
-        "always": undefined
+        }
       }
     },
     "event_eid": {
@@ -583,15 +742,18 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", {
-                "0": "event_eid",
-                "eid": yield ctx.modules.get(ctx, "event", "eid")
-              });
-            }
-          }]
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", [
+            "event_eid",
+            { "eid": yield ctx.modules.get(ctx, "event", "eid") }
+          ], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
       }
     }
   }

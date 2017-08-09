@@ -23,12 +23,18 @@ module.exports = {
             ]]
         }
       },
-      "postlude": {
-        "fired": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "error_log", yield ctx.callKRLstdlib("append", yield ctx.modules.get(ctx, "ent", "error_log"), yield (yield ctx.modules.get(ctx, "event", "attrs"))(ctx, [])));
-        },
-        "notfired": undefined,
-        "always": undefined
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
+          yield ctx.modules.set(ctx, "ent", "error_log", yield ctx.callKRLstdlib("append", [
+            yield ctx.modules.get(ctx, "ent", "error_log"),
+            yield ctx.applyFn(yield ctx.modules.get(ctx, "event", "attrs"), ctx, [])
+          ]));
+        }
       }
     },
     "basic0": {
@@ -47,19 +53,18 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["basic0"]);
-            }
-          }]
-      },
-      "postlude": {
-        "fired": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["basic0"], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
           yield ctx.raiseError(ctx, "info", "some info error");
-        },
-        "notfired": undefined,
-        "always": undefined
+        }
       }
     },
     "basic1": {
@@ -78,19 +83,18 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["basic1"]);
-            }
-          }]
-      },
-      "postlude": {
-        "fired": function* (ctx) {
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["basic1"], []);
+        }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
           yield ctx.raiseError(ctx, "info", "this should not fire, b/c basic0 stopped execution");
-        },
-        "notfired": undefined,
-        "always": undefined
+        }
       }
     }
   }

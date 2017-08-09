@@ -23,21 +23,25 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["first"]);
-            }
-          }]
-      },
-      "postlude": {
-        "fired": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", yield ctx.modules.get(ctx, "ent", "order"), "first-fired"));
-        },
-        "notfired": undefined,
-        "always": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", yield ctx.modules.get(ctx, "ent", "order"), "first-finally"));
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["first"], []);
         }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
+          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", [
+            yield ctx.modules.get(ctx, "ent", "order"),
+            "first-fired"
+          ]));
+        }
+        yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", [
+          yield ctx.modules.get(ctx, "ent", "order"),
+          "first-finally"
+        ]));
       }
     },
     "second": {
@@ -56,21 +60,25 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["second"]);
-            }
-          }]
-      },
-      "postlude": {
-        "fired": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", yield ctx.modules.get(ctx, "ent", "order"), "second-fired"));
-        },
-        "notfired": undefined,
-        "always": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", yield ctx.modules.get(ctx, "ent", "order"), "second-finally"));
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["second"], []);
         }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        if (fired) {
+          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", [
+            yield ctx.modules.get(ctx, "ent", "order"),
+            "second-fired"
+          ]));
+        }
+        yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", [
+          yield ctx.modules.get(ctx, "ent", "order"),
+          "second-finally"
+        ]));
       }
     },
     "reset_order": {
@@ -89,19 +97,16 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["reset_order"]);
-            }
-          }]
-      },
-      "postlude": {
-        "fired": undefined,
-        "notfired": undefined,
-        "always": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "order", []);
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["reset_order"], []);
         }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        yield ctx.modules.set(ctx, "ent", "order", []);
       }
     },
     "foo_or_bar": {
@@ -134,19 +139,19 @@ module.exports = {
           ]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["foo_or_bar"]);
-            }
-          }]
-      },
-      "postlude": {
-        "fired": undefined,
-        "notfired": undefined,
-        "always": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", yield ctx.modules.get(ctx, "ent", "order"), "foo_or_bar"));
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["foo_or_bar"], []);
         }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", [
+          yield ctx.modules.get(ctx, "ent", "order"),
+          "foo_or_bar"
+        ]));
       }
     },
     "foo": {
@@ -165,19 +170,19 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["foo"]);
-            }
-          }]
-      },
-      "postlude": {
-        "fired": undefined,
-        "notfired": undefined,
-        "always": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", yield ctx.modules.get(ctx, "ent", "order"), "foo"));
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["foo"], []);
         }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", [
+          yield ctx.modules.get(ctx, "ent", "order"),
+          "foo"
+        ]));
       }
     },
     "bar": {
@@ -196,19 +201,19 @@ module.exports = {
             ]]
         }
       },
-      "action_block": {
-        "actions": [{
-            "action": function* (ctx, runAction) {
-              return yield runAction(ctx, void 0, "send_directive", ["bar"]);
-            }
-          }]
-      },
-      "postlude": {
-        "fired": undefined,
-        "notfired": undefined,
-        "always": function* (ctx) {
-          yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", yield ctx.modules.get(ctx, "ent", "order"), "bar"));
+      "body": function* (ctx, runAction, toPairs) {
+        var fired = true;
+        if (fired) {
+          yield runAction(ctx, void 0, "send_directive", ["bar"], []);
         }
+        if (fired)
+          ctx.emit("debug", "fired");
+        else
+          ctx.emit("debug", "not fired");
+        yield ctx.modules.set(ctx, "ent", "order", yield ctx.callKRLstdlib("append", [
+          yield ctx.modules.get(ctx, "ent", "order"),
+          "bar"
+        ]));
       }
     }
   }

@@ -53,6 +53,10 @@ module.exports = function(opts){
         },
 
 
+        ///////////////////////////////////////////////////////////////////////
+        //
+        // Picos
+        //
         getPicoIDByECI: function(eci, callback){
             ldb.get(["channel", eci], function(err, data){
                 if(err && err.notFound){
@@ -92,8 +96,6 @@ module.exports = function(opts){
                 callback(err, (data && data.parent_id) || null);
             });
         },
-
-
         listChildren: function(pico_id, callback){
             var children = [];
             dbRange(ldb, {
@@ -169,32 +171,10 @@ module.exports = function(opts){
         },
 
 
-        newChannel: function(opts, callback){
-            var new_channel = {
-                id: newID(),
-                pico_id: opts.pico_id,
-                name: opts.name,
-                type: opts.type
-            };
-            var ops = [
-                {
-                    type: "put",
-                    key: ["channel", new_channel.id],
-                    value: new_channel,
-                },
-                {
-                    type: "put",
-                    key: ["pico-eci-list", new_channel.pico_id, new_channel.id],
-                    value: true,
-                }
-            ];
-            ldb.batch(ops, function(err){
-                if(err) return callback(err);
-                callback(undefined, new_channel);
-            });
-        },
-
-
+        ////////////////////////////////////////////////////////////////////////
+        //
+        // installed rulesets
+        //
         ridsOnPico: function(pico_id, callback){
             var pico_rids = {};
             dbRange(ldb, {
@@ -242,6 +222,34 @@ module.exports = function(opts){
         },
 
 
+        ////////////////////////////////////////////////////////////////////////
+        //
+        // channels
+        //
+        newChannel: function(opts, callback){
+            var new_channel = {
+                id: newID(),
+                pico_id: opts.pico_id,
+                name: opts.name,
+                type: opts.type
+            };
+            var ops = [
+                {
+                    type: "put",
+                    key: ["channel", new_channel.id],
+                    value: new_channel,
+                },
+                {
+                    type: "put",
+                    key: ["pico-eci-list", new_channel.pico_id, new_channel.id],
+                    value: true,
+                }
+            ];
+            ldb.batch(ops, function(err){
+                if(err) return callback(err);
+                callback(undefined, new_channel);
+            });
+        },
         listChannels: function(pico_id, callback){
             var eci_list = [];
             dbRange(ldb, {
@@ -269,6 +277,10 @@ module.exports = function(opts){
         },
 
 
+        ////////////////////////////////////////////////////////////////////////
+        //
+        // ent:*
+        //
         putEntVar: function(pico_id, rid, var_name, val, callback){
             ldb.put(["entvars", pico_id, rid, var_name], val, callback);
         },
@@ -283,6 +295,11 @@ module.exports = function(opts){
         removeEntVar: function(pico_id, rid, var_name, callback){
             ldb.del(["entvars", pico_id, rid, var_name], callback);
         },
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        // app:*
+        //
         putAppVar: function(rid, var_name, val, callback){
             ldb.put(["appvars", rid, var_name], val, callback);
         },
@@ -297,6 +314,12 @@ module.exports = function(opts){
         removeAppVar: function(rid, var_name, callback){
             ldb.del(["appvars", rid, var_name], callback);
         },
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        // event state machine and aggregators
+        //
         getStateMachineState: function(pico_id, rule, callback){
             var key = ["state_machine", pico_id, rule.rid, rule.name];
             ldb.get(key, function(err, curr_state){
@@ -317,6 +340,7 @@ module.exports = function(opts){
             ldb.put(key, state || "start", callback);
         },
 
+
         getStateMachineStartTime: function(pico_id, rule, callback){
             var key = ["state_machine_starttime", pico_id, rule.rid, rule.name];
             ldb.get(key, function(err, time){
@@ -334,6 +358,7 @@ module.exports = function(opts){
             var key = ["state_machine_starttime", pico_id, rule.rid, rule.name];
             ldb.put(key, time, callback);
         },
+
 
         updateAggregatorVar: function(pico_id, rule, var_key, updater, callback){
             var key = [
@@ -359,6 +384,12 @@ module.exports = function(opts){
                 });
             });
         },
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        // rulesets
+        //
         storeRuleset: function(krl_src, meta, callback){
             var timestamp = (new Date()).toISOString();
             if(arguments.length === 4 && _.isString(arguments[3])){//for testing only
@@ -541,6 +572,12 @@ module.exports = function(opts){
                 });
             });
         },
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        // scheduled events
+        //
         scheduleEventAt: function(at, event, callback){
             var id = newID();
 
@@ -623,6 +660,12 @@ module.exports = function(opts){
                 ldb.batch(to_batch, callback);
             });
         },
+
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        // db migrations
+        //
         getMigrationLog: getMigrationLog,
         recordMigration: recordMigration,
         removeMigration: removeMigration,

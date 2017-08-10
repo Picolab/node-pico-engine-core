@@ -2,6 +2,7 @@ var _ = require("lodash");
 var cuid = require("cuid");
 var async = require("async");
 var crypto = require("crypto");
+var ktypes = require("krl-stdlib/types");
 var dbRange = require("./dbRange");
 var levelup = require("levelup");
 var bytewise = require("bytewise");
@@ -68,17 +69,16 @@ module.exports = function(opts){
         },
 
 
-        hasPico: function(id, callback){
+        assertPicoID: function(id, callback){
+            if( ! _.isString(id)){
+                return callback(new Error("Invalid pico_id: " + ktypes.toString(id)));
+            }
             ldb.get(["pico", id], function(err){
-                if(err){
-                    if(err.notFound){
-                        callback(null, false);
-                        return;
-                    }
-                    callback(err);
-                    return;
+                if(err && err.notFound){
+                    err = new levelup.errors.NotFoundError("Invalid pico_id: " + id);
+                    err.notFound = true;
                 }
-                callback(null, true);
+                callback(err, err ? null : id);
             });
         },
 

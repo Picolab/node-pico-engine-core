@@ -706,3 +706,36 @@ test("DB - parent/child", function(t){
 
     ], t.end);
 });
+
+
+test("DB - assertPicoID", function(t){
+    var db = mkTestDB();
+
+    var tstPID = function(id, expected_it){
+        return function(next){
+            db.assertPicoID(id, function(err, got_id){
+                if(expected_it){
+                    t.notOk(err);
+                    t.equals(got_id, id);
+                }else{
+                    t.ok(err);
+                    t.notOk(got_id);
+                }
+                next();
+            });
+        };
+    };
+
+    async.series([
+        async.apply(db.newPico, {}),
+
+        tstPID(null, false),
+        tstPID(void 0, false),
+        tstPID({}, false),
+        tstPID(0, false),
+
+        tstPID("id0", true),
+        tstPID("id2", false),
+
+    ], t.end);
+});

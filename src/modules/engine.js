@@ -66,12 +66,8 @@ module.exports = function(core){
             "parent_id",
         ], function(args, ctx, callback){
             var parent_id = args.parent_id || ctx.pico_id;
-            core.db.hasPico(parent_id, function(err, has_pid){
+            core.db.assertPicoID(parent_id, function(err, parent_id){
                 if(err) return callback(err);
-                if( ! has_pid){
-                    callback(new Error("engine:newPico missing parent_id"));
-                    return;
-                }
 
                 core.db.newPico({
                     parent_id: parent_id,

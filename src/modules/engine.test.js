@@ -335,7 +335,7 @@ test("engine:newPico", function(t){
                 yield action({}, "newPico", {});
                 t.fail("should have thrown");
             }catch(e){
-                t.equals(e + "", "Error: engine:newPico missing parent_id");
+                t.equals(e + "", "Error: Invalid pico_id: null");
             }
         }, t.end);
     });

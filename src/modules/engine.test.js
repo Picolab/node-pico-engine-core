@@ -301,3 +301,42 @@ test("engine:listInstalledRIDs", function(t){
         }, t.end);
     });
 });
+
+test("engine:newPico", function(t){
+    mkTestPicoEngine({
+        rootRIDs: ["io.picolabs.engine"],
+    }, function(err, pe){
+        if(err) return t.end(err);
+
+        cocb.run(function*(){
+            var action = function*(ctx, name, args){
+                return yield pe.modules.action(ctx, "engine", name, args);
+            };
+
+            var pico2 = yield action({}, "newPico", {
+                parent_id: "id0",
+            });
+            t.deepEquals(pico2, {
+                id: "id2",
+                parent_id: "id0",
+            });
+
+            //default to ctx.pico_id
+            var pico3 = yield action({
+                pico_id: "id2",//called by pico2
+            }, "newPico", {});
+            t.deepEquals(pico3, {
+                id: "id3",
+                parent_id: "id2",
+            });
+
+            //no parent_id
+            try{
+                yield action({}, "newPico", {});
+                t.fail("should have thrown");
+            }catch(e){
+                t.equals(e + "", "Error: engine:newPico missing parent_id");
+            }
+        }, t.end);
+    });
+});

@@ -63,8 +63,20 @@ module.exports = function(core){
 
     var actions = {
         newPico: mkKRLfn([
+            "parent_id",
         ], function(args, ctx, callback){
-            core.db.newPico({}, callback);
+            var parent_id = args.parent_id || ctx.pico_id;
+            core.db.hasPico(parent_id, function(err, has_pid){
+                if(err) return callback(err);
+                if( ! has_pid){
+                    callback(new Error("engine:newPico missing parent_id"));
+                    return;
+                }
+
+                core.db.newPico({
+                    parent_id: parent_id,
+                }, callback);
+            });
         }),
         removePico: mkKRLfn([
             "pico_id",

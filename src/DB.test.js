@@ -698,5 +698,11 @@ test("DB - parent/child", function(t){
         assertChildren("id4", []),
         assertChildren("id5", []),
 
+        async.apply(db.removePico, "id5"),
+        assertChildren("id3", ["id4"]),
+
+        async.apply(db.removePico, "id3"),
+        assertChildren("id3", []),
+
     ], t.end);
 });

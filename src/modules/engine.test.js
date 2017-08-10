@@ -280,3 +280,24 @@ test("engine:describeRuleset", function(t){
         }, t.end);
     });
 });
+
+test("engine:listInstalledRIDs", function(t){
+    mkTestPicoEngine({
+        rootRIDs: [
+            "io.picolabs.hello_world",
+        ],
+    }, function(err, pe){
+        if(err) return t.end(err);
+
+        cocb.run(function*(){
+            var ctx = {};
+            var listRIDs = yield pe.modules.get(ctx, "engine", "listInstalledRIDs");
+
+            var rids = yield listRIDs(ctx, {pico_id: "id0"});
+
+            t.deepEquals(rids, [
+                "io.picolabs.hello_world",
+            ]);
+        }, t.end);
+    });
+});

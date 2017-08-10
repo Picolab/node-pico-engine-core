@@ -10,29 +10,33 @@ module.exports = function(core){
         ], function(args, ctx, callback){
             core.db.getPicoIDByECI(args.eci, callback);
         }),
-        listChildren: mkKRLfn([
-            "pico_id",
-        ], function(args, ctx, callback){
-            core.db.listChildren(args.pico_id, callback);
-        }),
         getParent: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
             core.db.getParent(args.pico_id, callback);
+        }),
+        listChildren: mkKRLfn([
+            "pico_id",
+        ], function(args, ctx, callback){
+            core.db.listChildren(args.pico_id, callback);
         }),
         listChannels: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
             core.db.listChannels(args.pico_id, callback);
         }),
+        listInstalledRIDs: mkKRLfn([
+            "pico_id",
+        ], function(args, ctx, callback){
+            //TODO fallback on ctx.pico_id
+            core.db.ridsOnPico(args.pico_id, function(err, rid_set){
+                if(err) return callback(err);
+                callback(null, _.keys(rid_set));
+            });
+        }),
         listAllEnabledRIDs: mkKRLfn([
         ], function(args, ctx, callback){
             core.db.listAllEnabledRIDs(callback);
-        }),
-        listAllInstalledRIDs: mkKRLfn([
-            "pico_id",
-        ], function(args, ctx, callback){
-            core.db.listAllInstalledRIDs(args.pico_id, callback);
         }),
         describeRuleset: mkKRLfn([
             "rid",

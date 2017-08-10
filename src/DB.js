@@ -446,16 +446,6 @@ module.exports = function(opts){
                 callback(err, rids);
             });
         },
-        listAllInstalledRIDs: function(pico_id, callback){
-            var channels = [];
-            dbRange(ldb, {
-                prefix: ["pico", pico_id, "ruleset"],
-            }, function(data){
-                channels.push(data.key[3]);
-            }, function(err){
-                callback(err, channels);
-            });
-        },
         isRulesetUsed: function(rid, callback){
             var is_used = false;
             dbRange(ldb, {

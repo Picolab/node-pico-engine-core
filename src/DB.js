@@ -51,6 +51,8 @@ module.exports = function(opts){
                 callback(err, db_data);
             });
         },
+
+
         getPicoIDByECI: function(eci, callback){
             ldb.get(["channel", eci], function(err, data){
                 if(err && err.notFound){
@@ -60,12 +62,18 @@ module.exports = function(opts){
                 callback(err, data && data.pico_id);
             });
         },
+
+
         getRootPico: function(callback){
             ldb.get(["root_pico"], callback);
         },
+
+
         putRootPico: function(data, callback){
             ldb.put(["root_pico"], data, callback);
         },
+
+
         hasPico: function(id, callback){
             ldb.get(["pico", id], function(err){
                 if(err){
@@ -79,6 +87,20 @@ module.exports = function(opts){
                 callback(null, true);
             });
         },
+
+
+        getParent: function(pico_id, callback){
+            var parent = {};
+            dbRange(ldb, {
+                prefix: ["pico", pico_id, "io.picolabs.pico", "vars", "parent"],
+            }, function(data){
+                parent = data.value.id;
+            }, function(err){
+                callback(err, parent);
+            });
+        },
+
+
         listChildren: function(pico_id, callback){
             var children = [];
             dbRange(ldb, {
@@ -91,25 +113,37 @@ module.exports = function(opts){
                 callback(err, children);
             });
         },
-        getParent: function(pico_id, callback){
-            var parent = {};
-            dbRange(ldb, {
-                prefix: ["pico", pico_id, "io.picolabs.pico", "vars", "parent"],
-            }, function(data){
-                parent = data.value.id;
-            }, function(err){
-                callback(err, parent);
-            });
-        },
+
+
         newPico: function(opts, callback){
             var new_pico = {
-                id: newID()
+                id: newID(),
+                parent_id: _.isString(opts.parent_id) && opts.parent_id.length > 0
+                    ? opts.parent_id
+                    : null,
             };
-            ldb.put(["pico", new_pico.id], new_pico, function(err){
+
+            var ops = [
+                {
+                    type: "put",
+                    key: ["pico", new_pico.id],
+                    value: new_pico,
+                },
+            ];
+            if(new_pico.parent_id){
+                ops.push({
+                    type: "put",
+                    key: ["pico-children", new_pico.parent_id, new_pico.id],
+                    value: true,
+                });
+            }
+            ldb.batch(ops, function(err){
                 if(err) return callback(err);
                 callback(undefined, new_pico);
             });
         },
+
+
         removePico: function(id, callback){
             var to_batch = [];
 

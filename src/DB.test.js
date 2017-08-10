@@ -52,6 +52,7 @@ test("DB - write and read", function(t){
             pico: {
                 "id0": {
                     id: "id0",
+                    parent_id: null,
                 }
             },
             "pico-ruleset": {"id0": {"rs0": {on: true}}},

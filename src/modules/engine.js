@@ -5,26 +5,35 @@ var mkKRLfn = require("../mkKRLfn");
 
 module.exports = function(core){
     var fns = {
+
         getPicoIDByECI: mkKRLfn([
             "eci",
         ], function(args, ctx, callback){
             core.db.getPicoIDByECI(args.eci, callback);
         }),
+
+
         getParent: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
             core.db.getParent(args.pico_id, callback);
         }),
+
+
         listChildren: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
             core.db.listChildren(args.pico_id, callback);
         }),
+
+
         listChannels: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
             core.db.listChannels(args.pico_id, callback);
         }),
+
+
         listInstalledRIDs: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
@@ -34,10 +43,14 @@ module.exports = function(core){
                 callback(null, _.keys(rid_set));
             });
         }),
+
+
         listAllEnabledRIDs: mkKRLfn([
         ], function(args, ctx, callback){
             core.db.listAllEnabledRIDs(callback);
         }),
+
+
         describeRuleset: mkKRLfn([
             "rid",
         ], function(args, ctx, callback){
@@ -59,9 +72,11 @@ module.exports = function(core){
                 });
             });
         }),
+
     };
 
     var actions = {
+
         newPico: mkKRLfn([
             "parent_id",
         ], function(args, ctx, callback){
@@ -74,11 +89,15 @@ module.exports = function(core){
                 }, callback);
             });
         }),
+
+
         removePico: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
             core.db.removePico(args.pico_id, callback);
         }),
+
+
         newChannel: mkKRLfn([
             "pico_id",
             "name",
@@ -86,11 +105,15 @@ module.exports = function(core){
         ], function(args, ctx, callback){
             core.db.newChannel(args, callback);
         }),
+
+
         removeChannel: mkKRLfn([
             "eci",
         ], function(args, ctx, callback){
             core.db.removeChannel(args.eci, callback);
         }),
+
+
         registerRuleset: mkKRLfn([
             "url",
             "base",
@@ -106,6 +129,8 @@ module.exports = function(core){
                 callback(null, data.rid);
             });
         }),
+
+
         unregisterRuleset: mkKRLfn([
             "rid",
         ], function(args, ctx, callback){
@@ -115,6 +140,8 @@ module.exports = function(core){
 
             async.each(rids, core.unregisterRuleset, callback);
         }),
+
+
         installRuleset: mkKRLfn([
             "pico_id",
             "rid",
@@ -158,6 +185,8 @@ module.exports = function(core){
             }
             callback(new Error("installRuleset expects `rid` or `url`+`base`"));
         }),
+
+
         uninstallRuleset: mkKRLfn([
             "pico_id",
             "rid",
@@ -170,6 +199,7 @@ module.exports = function(core){
                 core.uninstallRuleset(args.pico_id, rid, next);
             }, callback);
         }),
+
     };
 
     return {

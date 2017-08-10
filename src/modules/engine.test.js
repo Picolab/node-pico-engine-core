@@ -332,3 +332,19 @@ testPE("engine:newPico", function * (t, pe){
         t.equals(e + "", "Error: Invalid pico_id: null");
     }
 });
+
+
+testPE("engine:getParent", function * (t, pe){
+
+    var newPico = function*(parent_id){
+        return yield pe.modules.action({pico_id: parent_id}, "engine", "newPico", []);
+    };
+
+    var getParent = yield pe.modules.get({}, "engine", "getParent");
+
+    t.equals(yield getParent({}, ["id0"]), null);
+
+    var pico2 = yield newPico("id0");
+    t.equals(yield getParent({}, [pico2.id]), "id0");
+
+});

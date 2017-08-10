@@ -14,6 +14,22 @@ var tick = function(fn){
     };
 };
 
+
+var testPE = function(test_name, genfn){
+    test(test_name, function(t){
+        mkTestPicoEngine({
+            rootRIDs: ["io.picolabs.engine"],
+        }, function(err, pe){
+            if(err) return t.end(err);
+
+            cocb.run(function*(){
+                yield genfn(t, pe);
+            }, t.end);
+        });
+    });
+};
+
+
 test("engine:getPicoIDByECI", function(t){
     cocb.run(function*(){
         var engine = kengine({
@@ -236,107 +252,83 @@ test("engine:unregisterRuleset", function(t){
     }, t.end);
 });
 
-test("engine:describeRuleset", function(t){
-    mkTestPicoEngine({}, function(err, pe){
-        if(err) return t.end(err);
+testPE("engine:describeRuleset", function * (t, pe){
+    var ctx = {};
+    var descRID = yield pe.modules.get(ctx, "engine", "describeRuleset");
 
-        cocb.run(function*(){
-            var ctx = {};
-            var descRID = yield pe.modules.get(ctx, "engine", "describeRuleset");
+    var desc = yield descRID(ctx, {rid: "io.picolabs.hello_world"});
 
-            var desc = yield descRID(ctx, {rid: "io.picolabs.hello_world"});
+    var isIsoString = function(str){
+        return str === (new Date(str)).toISOString();
+    };
 
-            var isIsoString = function(str){
-                return str === (new Date(str)).toISOString();
-            };
-
-            t.deepEquals(_.keys(desc), [
-                "rid",
-                "src",
-                "hash",
-                "url",
-                "timestamp_stored",
-                "timestamp_enable",
-                "meta",
-            ]);
-            t.equals(desc.rid, "io.picolabs.hello_world");
-            t.ok(_.isString(desc.src));
-            t.ok(_.isString(desc.hash));
-            t.ok(_.isString(desc.url));
-            t.ok(isIsoString(desc.timestamp_stored));
-            t.ok(isIsoString(desc.timestamp_enable));
-            t.deepEquals(desc.meta, {
-                name: "Hello World",
-                description: "\nA first ruleset for the Quickstart\n        ",
-                author: "Phil Windley",
-            });
-
-            try{
-                yield descRID(ctx, {rid: "not.found"});
-                t.fail("should fail b/c not found");
-            }catch(err){
-                t.ok(err && err.notFound);
-            }
-        }, t.end);
+    t.deepEquals(_.keys(desc), [
+        "rid",
+        "src",
+        "hash",
+        "url",
+        "timestamp_stored",
+        "timestamp_enable",
+        "meta",
+    ]);
+    t.equals(desc.rid, "io.picolabs.hello_world");
+    t.ok(_.isString(desc.src));
+    t.ok(_.isString(desc.hash));
+    t.ok(_.isString(desc.url));
+    t.ok(isIsoString(desc.timestamp_stored));
+    t.ok(isIsoString(desc.timestamp_enable));
+    t.deepEquals(desc.meta, {
+        name: "Hello World",
+        description: "\nA first ruleset for the Quickstart\n        ",
+        author: "Phil Windley",
     });
+
+    try{
+        yield descRID(ctx, {rid: "not.found"});
+        t.fail("should fail b/c not found");
+    }catch(err){
+        t.ok(err && err.notFound);
+    }
 });
 
-test("engine:listInstalledRIDs", function(t){
-    mkTestPicoEngine({
-        rootRIDs: [
-            "io.picolabs.hello_world",
-        ],
-    }, function(err, pe){
-        if(err) return t.end(err);
+testPE("engine:listInstalledRIDs", function * (t, pe){
+    var ctx = {};
+    var listRIDs = yield pe.modules.get(ctx, "engine", "listInstalledRIDs");
 
-        cocb.run(function*(){
-            var ctx = {};
-            var listRIDs = yield pe.modules.get(ctx, "engine", "listInstalledRIDs");
+    var rids = yield listRIDs(ctx, {pico_id: "id0"});
 
-            var rids = yield listRIDs(ctx, {pico_id: "id0"});
-
-            t.deepEquals(rids, [
-                "io.picolabs.hello_world",
-            ]);
-        }, t.end);
-    });
+    t.deepEquals(rids, [
+        "io.picolabs.engine",
+    ]);
 });
 
-test("engine:newPico", function(t){
-    mkTestPicoEngine({
-        rootRIDs: ["io.picolabs.engine"],
-    }, function(err, pe){
-        if(err) return t.end(err);
+testPE("engine:newPico", function * (t, pe){
+    var action = function*(ctx, name, args){
+        return yield pe.modules.action(ctx, "engine", name, args);
+    };
 
-        cocb.run(function*(){
-            var action = function*(ctx, name, args){
-                return yield pe.modules.action(ctx, "engine", name, args);
-            };
-
-            var pico2 = yield action({}, "newPico", {
-                parent_id: "id0",
-            });
-            t.deepEquals(pico2, {
-                id: "id2",
-                parent_id: "id0",
-            });
-
-            //default to ctx.pico_id
-            var pico3 = yield action({
-                pico_id: "id2",//called by pico2
-            }, "newPico", {});
-            t.deepEquals(pico3, {
-                id: "id3",
-                parent_id: "id2",
-            });
-
-            //no parent_id
-            try{
-                yield action({}, "newPico", {});
-                t.fail("should have thrown");
-            }catch(e){
-                t.equals(e + "", "Error: Invalid pico_id: null");
-            }
-        }, t.end);
+    var pico2 = yield action({}, "newPico", {
+        parent_id: "id0",
     });
+    t.deepEquals(pico2, {
+        id: "id2",
+        parent_id: "id0",
+    });
+
+    //default to ctx.pico_id
+    var pico3 = yield action({
+        pico_id: "id2",//called by pico2
+    }, "newPico", {});
+    t.deepEquals(pico3, {
+        id: "id3",
+        parent_id: "id2",
+    });
+
+    //no parent_id
+    try{
+        yield action({}, "newPico", {});
+        t.fail("should have thrown");
+    }catch(e){
+        t.equals(e + "", "Error: Invalid pico_id: null");
+    }
 });

@@ -164,6 +164,21 @@ module.exports = function(opts){
                     to_batch.push({type: "del", key: key});
                     to_batch.push({type: "del", key: ["ruleset-pico", key[2], key[1]]});
                 }),
+                keyRange(["pico-children", id], function(key){
+                    to_batch.push({type: "del", key: key});
+                }),
+                function(next){
+                    ldb.get(["pico", id], function(err, pico){
+                        if(err) return next(err);
+                        if(pico && pico.parent_id){
+                            keyRange(["pico-children", pico.parent_id, id], function(key){
+                                to_batch.push({type: "del", key: key});
+                            })(next);
+                        }else{
+                            next();
+                        }
+                    });
+                },
             ], function(err){
                 if(err)return callback(err);
                 ldb.batch(to_batch, callback);

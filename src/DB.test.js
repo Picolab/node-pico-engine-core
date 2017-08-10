@@ -26,8 +26,10 @@ test("DB - write and read", function(t){
         chan1: async.apply(db.newChannel, {pico_id: "id0", name: "one", type: "t"}),
         rule0: async.apply(db.addRulesetToPico, "id0", "rs0"),
         chan2: async.apply(db.newChannel, {pico_id: "id0", name: "two", type: "t"}),
+        pico1: async.apply(db.newPico, {parent_id: "id0"}),
         end_db: async.apply(db.toObj),
         rmpico0: async.apply(db.removePico, "id0"),
+        rmpico1: async.apply(db.removePico, "id3"),
         post_del_db: async.apply(db.toObj)
     }, function(err, data){
         if(err) return t.end(err);
@@ -53,10 +55,15 @@ test("DB - write and read", function(t){
                 "id0": {
                     id: "id0",
                     parent_id: null,
-                }
+                },
+                "id3": {
+                    id: "id3",
+                    parent_id: "id0",
+                },
             },
             "pico-ruleset": {"id0": {"rs0": {on: true}}},
             "ruleset-pico": {"rs0": {"id0": {on: true}}},
+            "pico-children": {"id0": {"id3": true}},
             "pico-eci-list": {
                 "id0": {
                     "id1": true,

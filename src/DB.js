@@ -64,16 +64,6 @@ module.exports = function(opts){
         },
 
 
-        getRootPico: function(callback){
-            ldb.get(["root_pico"], callback);
-        },
-
-
-        putRootPico: function(data, callback){
-            ldb.put(["root_pico"], data, callback);
-        },
-
-
         hasPico: function(id, callback){
             ldb.get(["pico", id], function(err){
                 if(err){
@@ -89,14 +79,17 @@ module.exports = function(opts){
         },
 
 
+        getRootPico: function(callback){
+            ldb.get(["root_pico"], callback);
+        },
+        putRootPico: function(data, callback){
+            ldb.put(["root_pico"], data, callback);
+        },
+
+
         getParent: function(pico_id, callback){
-            var parent = {};
-            dbRange(ldb, {
-                prefix: ["pico", pico_id, "io.picolabs.pico", "vars", "parent"],
-            }, function(data){
-                parent = data.value.id;
-            }, function(err){
-                callback(err, parent);
+            ldb.get(["pico", pico_id], function(err, data){
+                callback(err, (data && data.parent_id) || null);
             });
         },
 
@@ -104,11 +97,10 @@ module.exports = function(opts){
         listChildren: function(pico_id, callback){
             var children = [];
             dbRange(ldb, {
-                prefix: ["pico", pico_id, "io.picolabs.pico", "vars", "children"],
-            }, function(data){
-                children = data.value.map(function(x) {
-                    return x.id;
-                });
+                prefix: ["pico-children", pico_id],
+                values: false,
+            }, function(key){
+                children.push(key[2]);
             }, function(err){
                 callback(err, children);
             });
@@ -175,6 +167,8 @@ module.exports = function(opts){
                 ldb.batch(to_batch, callback);
             });
         },
+
+
         newChannel: function(opts, callback){
             var new_channel = {
                 id: newID(),
@@ -199,6 +193,8 @@ module.exports = function(opts){
                 callback(undefined, new_channel);
             });
         },
+
+
         ridsOnPico: function(pico_id, callback){
             var pico_rids = {};
             dbRange(ldb, {
@@ -244,6 +240,8 @@ module.exports = function(opts){
                 ldb.batch(ops, callback);
             });
         },
+
+
         listChannels: function(pico_id, callback){
             var eci_list = [];
             dbRange(ldb, {
@@ -269,6 +267,8 @@ module.exports = function(opts){
                 ldb.batch(ops, callback);
             });
         },
+
+
         putEntVar: function(pico_id, rid, var_name, val, callback){
             ldb.put(["entvars", pico_id, rid, var_name], val, callback);
         },

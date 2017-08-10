@@ -643,3 +643,53 @@ test("DB - migrations", function(t){
         },
     ], t.end);
 });
+
+test("DB - parent/child", function(t){
+    var db = mkTestDB();
+
+    var assertParent = function(pico_id, expected_parent_id){
+        return function(next){
+            db.getParent(pico_id, function(err, parent_id){
+                if(err) return next(err);
+                t.equals(parent_id, expected_parent_id, "testing db.getParent");
+                next();
+            });
+        };
+    };
+
+    var assertChildren = function(pico_id, expected_children_ids){
+        return function(next){
+            db.listChildren(pico_id, function(err, list){
+                if(err) return next(err);
+                t.deepEquals(list, expected_children_ids, "testing db.listChildren");
+                next();
+            });
+        };
+    };
+
+
+    async.series([
+        async.apply(db.newPico, {}),// id0
+        async.apply(db.newPico, {parent_id: "id0"}),// id1
+        async.apply(db.newPico, {parent_id: "id0"}),// id2
+        async.apply(db.newPico, {parent_id: "id0"}),// id3
+
+        async.apply(db.newPico, {parent_id: "id3"}),// id4
+        async.apply(db.newPico, {parent_id: "id3"}),// id5
+
+        assertParent("id0", null),
+        assertParent("id1", "id0"),
+        assertParent("id2", "id0"),
+        assertParent("id3", "id0"),
+        assertParent("id4", "id3"),
+        assertParent("id5", "id3"),
+
+        assertChildren("id0", ["id1", "id2", "id3"]),
+        assertChildren("id1", []),
+        assertChildren("id2", []),
+        assertChildren("id3", ["id4", "id5"]),
+        assertChildren("id4", []),
+        assertChildren("id5", []),
+
+    ], t.end);
+});

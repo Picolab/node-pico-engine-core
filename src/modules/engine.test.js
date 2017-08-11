@@ -399,3 +399,31 @@ testPE("engine:newChannel, engine:listChannels, engine:removeChannel", function 
     yield assertInvalidPicoID(listChannels, void 0, "Error: Invalid pico_id: null");
 
 });
+
+
+testPE("engine:installRuleset, engine:listInstalledRIDs, engine:uninstallRuleset", function * (t, pe){
+
+    var installRS = function*(ctx, args){
+        return yield pe.modules.action(ctx, "engine", "installRuleset", args);
+    };
+    var uninstallRID = function*(ctx, args){
+        return yield pe.modules.action(ctx, "engine", "uninstallRuleset", args);
+    };
+    var listRIDs = yield pe.modules.get({}, "engine", "listInstalledRIDs");
+
+    t.deepEquals(yield listRIDs({pico_id: "id0"}, []), [
+        "io.picolabs.engine",
+    ]);
+
+    t.equals(yield installRS({}, ["id0", "io.picolabs.hello_world"]), "io.picolabs.hello_world");
+    t.deepEquals(yield listRIDs({pico_id: "id0"}, []), [
+        "io.picolabs.engine",
+        "io.picolabs.hello_world",
+    ]);
+
+    t.equals(yield uninstallRID({}, ["id0", "io.picolabs.engine"]), void 0);
+    t.deepEquals(yield listRIDs({pico_id: "id0"}, []), [
+        "io.picolabs.hello_world",
+    ]);
+
+});

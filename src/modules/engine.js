@@ -55,10 +55,15 @@ module.exports = function(core){
         listInstalledRIDs: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
-            //TODO fallback on ctx.pico_id
-            core.db.ridsOnPico(args.pico_id, function(err, rid_set){
+
+            var pico_id = args.pico_id || ctx.pico_id;
+            core.db.assertPicoID(pico_id, function(err, pico_id){
                 if(err) return callback(err);
-                callback(null, _.keys(rid_set));
+
+                core.db.ridsOnPico(pico_id, function(err, rid_set){
+                    if(err) return callback(err);
+                    callback(null, _.keys(rid_set));
+                });
             });
         }),
 

@@ -34,12 +34,6 @@ module.exports = {
                     value: true,
                 });
 
-                to_batch.push({type: "del", key: data.key});
-
-            }else if(data.key[3] === "children"){
-
-                to_batch.push({type: "del", key: data.key});
-
             }
 
         }, function(err){

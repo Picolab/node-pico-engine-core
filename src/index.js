@@ -579,6 +579,7 @@ module.exports = function(conf){
 
     pe.start = function(callback){
         async.series([
+            db.checkAndRunMigrations,
             function(next){
                 if(_.isEmpty(rootRIDs)){
                     return next();
@@ -628,7 +629,6 @@ module.exports = function(conf){
                     });
                 });
             },
-            db.checkAndRunMigrations,
             registerAllEnabledRulesets,
             resumeScheduler,
         ], callback);

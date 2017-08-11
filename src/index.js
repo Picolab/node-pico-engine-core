@@ -519,7 +519,11 @@ module.exports = function(conf){
     };
 
     core.uninstallRuleset = function(pico_id, rid, callback){
-        db.removeRulesetFromPico(pico_id, rid, callback);
+        db.assertPicoID(pico_id, function(err, pico_id){
+            if(err) return callback(err);
+
+            db.removeRulesetFromPico(pico_id, rid, callback);
+        });
     };
 
     var resumeScheduler = function(callback){

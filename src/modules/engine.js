@@ -188,8 +188,11 @@ module.exports = function(core){
             "url",
             "base",
         ], function(args, ctx, callback){
+
+            var pico_id = args.pico_id || ctx.pico_id;
+
             var install = function(rid, callback){
-                core.installRuleset(args.pico_id, rid, function(err){
+                core.installRuleset(pico_id, rid, function(err){
                     callback(err, rid);
                 });
             };
@@ -231,12 +234,13 @@ module.exports = function(core){
             "pico_id",
             "rid",
         ], function(args, ctx, callback){
+            var pico_id = args.pico_id || ctx.pico_id;
             var rids = _.isArray(args.rid)
                 ? _.uniq(args.rid)
                 : [args.rid];
 
             async.each(rids, function(rid, next){
-                core.uninstallRuleset(args.pico_id, rid, next);
+                core.uninstallRuleset(pico_id, rid, next);
             }, callback);
         }),
 

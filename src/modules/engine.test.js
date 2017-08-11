@@ -434,4 +434,20 @@ testPE("engine:installRuleset, engine:listInstalledRIDs, engine:uninstallRuleset
         "io.picolabs.hello_world",
     ]);
 
+    //report error on invalid pico_id
+    var assertInvalidPicoID = function * (genfn, id, expected){
+        try{
+            yield genfn({pico_id: id}, {rid: "io.picolabs.hello_world"});
+            t.fail("should have thrown on invalid pico_id");
+        }catch(e){
+            t.equals(e + "", expected);
+        }
+    };
+
+    yield assertInvalidPicoID(installRS   , "id404", "NotFoundError: Invalid pico_id: id404");
+    yield assertInvalidPicoID(uninstallRID, "id404", "NotFoundError: Invalid pico_id: id404");
+
+    yield assertInvalidPicoID(installRS   , void 0, "Error: Invalid pico_id: null");
+    yield assertInvalidPicoID(uninstallRID, void 0, "Error: Invalid pico_id: null");
+
 });

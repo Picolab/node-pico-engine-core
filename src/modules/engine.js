@@ -16,14 +16,26 @@ module.exports = function(core){
         getParent: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
-            core.db.getParent(args.pico_id, callback);
+
+            var pico_id = args.pico_id || ctx.pico_id;
+            core.db.assertPicoID(pico_id, function(err, pico_id){
+                if(err) return callback(err);
+
+                core.db.getParent(pico_id, callback);
+            });
         }),
 
 
         listChildren: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
-            core.db.listChildren(args.pico_id, callback);
+
+            var pico_id = args.pico_id || ctx.pico_id;
+            core.db.assertPicoID(pico_id, function(err, pico_id){
+                if(err) return callback(err);
+
+                core.db.listChildren(pico_id, callback);
+            });
         }),
 
 

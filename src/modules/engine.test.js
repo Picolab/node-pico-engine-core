@@ -334,17 +334,47 @@ testPE("engine:newPico", function * (t, pe){
 });
 
 
-testPE("engine:getParent", function * (t, pe){
+testPE("engine:getParent, engine:listChildren", function * (t, pe){
 
     var newPico = function*(parent_id){
         return yield pe.modules.action({pico_id: parent_id}, "engine", "newPico", []);
     };
 
     var getParent = yield pe.modules.get({}, "engine", "getParent");
+    var listChildren = yield pe.modules.get({}, "engine", "listChildren");
+
+    yield newPico("id0");// id2
+    yield newPico("id0");// id3
+    yield newPico("id2");// id4
 
     t.equals(yield getParent({}, ["id0"]), null);
+    t.equals(yield getParent({}, ["id2"]), "id0");
+    t.equals(yield getParent({}, ["id3"]), "id0");
+    t.equals(yield getParent({}, ["id4"]), "id2");
 
-    var pico2 = yield newPico("id0");
-    t.equals(yield getParent({}, [pico2.id]), "id0");
+    t.deepEquals(yield listChildren({}, ["id0"]), ["id2", "id3"]);
+    t.deepEquals(yield listChildren({}, ["id2"]), ["id4"]);
+    t.deepEquals(yield listChildren({}, ["id3"]), []);
+    t.deepEquals(yield listChildren({}, ["id4"]), []);
 
+
+    //fallback on ctx.pico_id
+    t.equals(yield getParent({pico_id: "id4"}, []), "id2");
+    t.deepEquals(yield listChildren({pico_id: "id2"}, []), ["id4"]);
+
+    //report error on invalid pico_id
+    var assertInvalidPicoID = function * (genfn, id, expected){
+        try{
+            yield genfn({pico_id: id}, []);
+            t.fail("should have thrown on invalid pico_id");
+        }catch(e){
+            t.equals(e + "", expected);
+        }
+    };
+
+    yield assertInvalidPicoID(getParent   , "id404", "NotFoundError: Invalid pico_id: id404");
+    yield assertInvalidPicoID(listChildren, "id404", "NotFoundError: Invalid pico_id: id404");
+
+    yield assertInvalidPicoID(getParent   , void 0, "Error: Invalid pico_id: null");
+    yield assertInvalidPicoID(listChildren, void 0, "Error: Invalid pico_id: null");
 });

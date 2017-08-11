@@ -42,7 +42,13 @@ module.exports = function(core){
         listChannels: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
-            core.db.listChannels(args.pico_id, callback);
+
+            var pico_id = args.pico_id || ctx.pico_id;
+            core.db.assertPicoID(pico_id, function(err, pico_id){
+                if(err) return callback(err);
+
+                core.db.listChannels(pico_id, callback);
+            });
         }),
 
 
@@ -115,7 +121,17 @@ module.exports = function(core){
             "name",
             "type",
         ], function(args, ctx, callback){
-            core.db.newChannel(args, callback);
+
+            var pico_id = args.pico_id || ctx.pico_id;
+            core.db.assertPicoID(pico_id, function(err, pico_id){
+                if(err) return callback(err);
+
+                core.db.newChannel({
+                    pico_id: pico_id,
+                    name: args.name,
+                    type: args.type,
+                }, callback);
+            });
         }),
 
 

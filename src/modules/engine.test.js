@@ -61,32 +61,6 @@ test("engine:getPicoIDByECI", function(t){
     }, t.end);
 });
 
-test("engine:removeChannel", function(t){
-    cocb.run(function*(){
-        var engine = kengine({
-            db: {
-                removeChannel: tick(function(eci, callback){
-                    if(eci === "foo"){
-                        return callback();
-                    }
-                    callback("NOT FOUND:" + eci);
-                })
-            }
-        });
-        var rm = function*(eci){
-            return yield engine.actions.removeChannel({}, {eci: eci,});
-        };
-
-        t.equals(yield rm("foo"), void 0);
-        try{
-            yield rm("quux");
-            t.fail("should throw b/c not found");
-        }catch(err){
-            t.equals(err, "NOT FOUND:quux");
-        }
-
-    }, t.end);
-});
 
 test("engine:registerRuleset", function(t){
     cocb.run(function*(){
@@ -377,4 +351,51 @@ testPE("engine:getParent, engine:listChildren", function * (t, pe){
 
     yield assertInvalidPicoID(getParent   , void 0, "Error: Invalid pico_id: null");
     yield assertInvalidPicoID(listChildren, void 0, "Error: Invalid pico_id: null");
+});
+
+testPE("engine:newChannel, engine:listChannels, engine:removeChannel", function * (t, pe){
+
+    var newChannel = function*(ctx, args){
+        return yield pe.modules.action(ctx, "engine", "newChannel", args);
+    };
+    var removeChannel = function*(ctx, args){
+        return yield pe.modules.action(ctx, "engine", "removeChannel", args);
+    };
+    var listChannels = yield pe.modules.get({}, "engine", "listChannels");
+
+    t.deepEquals(yield listChannels({}, ["id0"]), [
+        {id: "id1", pico_id: "id0", name: "root", type: "secret"},
+    ]);
+
+    t.deepEquals(yield newChannel({}, ["id0"]), {id: "id2", pico_id: "id0", name: void 0, type: void 0});
+    t.deepEquals(yield listChannels({}, ["id0"]), [
+        {id: "id1", pico_id: "id0", name: "root", type: "secret"},
+        {id: "id2", pico_id: "id0"},
+    ]);
+
+    t.equals(yield removeChannel({}, ["id1"]), void 0);
+    t.deepEquals(yield listChannels({}, ["id0"]), [
+        {id: "id2", pico_id: "id0"},
+    ]);
+
+    t.equals(yield removeChannel({}, ["id2"]), void 0);
+    t.deepEquals(yield listChannels({}, ["id0"]), [
+    ]);
+
+    //report error on invalid pico_id
+    var assertInvalidPicoID = function * (genfn, id, expected){
+        try{
+            yield genfn({pico_id: id}, []);
+            t.fail("should have thrown on invalid pico_id");
+        }catch(e){
+            t.equals(e + "", expected);
+        }
+    };
+
+    yield assertInvalidPicoID(newChannel  , "id404", "NotFoundError: Invalid pico_id: id404");
+    yield assertInvalidPicoID(listChannels, "id404", "NotFoundError: Invalid pico_id: id404");
+
+    yield assertInvalidPicoID(newChannel  , void 0, "Error: Invalid pico_id: null");
+    yield assertInvalidPicoID(listChannels, void 0, "Error: Invalid pico_id: null");
+
 });

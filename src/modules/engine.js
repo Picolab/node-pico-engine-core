@@ -103,6 +103,7 @@ module.exports = function(core){
         newPico: mkKRLfn([
             "parent_id",
         ], function(args, ctx, callback){
+
             var parent_id = args.parent_id || ctx.pico_id;
             core.db.assertPicoID(parent_id, function(err, parent_id){
                 if(err) return callback(err);
@@ -117,7 +118,13 @@ module.exports = function(core){
         removePico: mkKRLfn([
             "pico_id",
         ], function(args, ctx, callback){
-            core.db.removePico(args.pico_id, callback);
+
+            var pico_id = args.pico_id || ctx.pico_id;
+            core.db.assertPicoID(pico_id, function(err, pico_id){
+                if(err) return callback(err);
+
+                core.db.removePico(pico_id, callback);
+            });
         }),
 
 

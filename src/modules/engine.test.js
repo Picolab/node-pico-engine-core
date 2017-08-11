@@ -308,10 +308,13 @@ testPE("engine:newPico", function * (t, pe){
 });
 
 
-testPE("engine:getParent, engine:listChildren", function * (t, pe){
+testPE("engine:getParent, engine:listChildren, engine:removePico", function * (t, pe){
 
     var newPico = function*(parent_id){
         return yield pe.modules.action({pico_id: parent_id}, "engine", "newPico", []);
+    };
+    var removePico = function*(ctx, args){
+        return yield pe.modules.action(ctx, "engine", "removePico", args);
     };
 
     var getParent = yield pe.modules.get({}, "engine", "getParent");
@@ -331,10 +334,13 @@ testPE("engine:getParent, engine:listChildren", function * (t, pe){
     t.deepEquals(yield listChildren({}, ["id3"]), []);
     t.deepEquals(yield listChildren({}, ["id4"]), []);
 
-
     //fallback on ctx.pico_id
     t.equals(yield getParent({pico_id: "id4"}, []), "id2");
     t.deepEquals(yield listChildren({pico_id: "id2"}, []), ["id4"]);
+
+
+    t.equals(yield removePico({}, ["id4"]), void 0);
+    t.deepEquals(yield listChildren({}, ["id2"]), []);
 
     //report error on invalid pico_id
     var assertInvalidPicoID = function * (genfn, id, expected){
@@ -348,9 +354,11 @@ testPE("engine:getParent, engine:listChildren", function * (t, pe){
 
     yield assertInvalidPicoID(getParent   , "id404", "NotFoundError: Invalid pico_id: id404");
     yield assertInvalidPicoID(listChildren, "id404", "NotFoundError: Invalid pico_id: id404");
+    yield assertInvalidPicoID(removePico  , "id404", "NotFoundError: Invalid pico_id: id404");
 
     yield assertInvalidPicoID(getParent   , void 0, "Error: Invalid pico_id: null");
     yield assertInvalidPicoID(listChildren, void 0, "Error: Invalid pico_id: null");
+    yield assertInvalidPicoID(removePico  , void 0, "Error: Invalid pico_id: null");
 });
 
 testPE("engine:newChannel, engine:listChannels, engine:removeChannel", function * (t, pe){

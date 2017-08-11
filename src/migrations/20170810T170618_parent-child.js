@@ -45,7 +45,23 @@ module.exports = {
         }, function(err){
             if(err) return callback(err);
 
-            ldb.batch(to_batch, callback);
+            dbRange(ldb, {
+                prefix: ["channel"],
+                limit: 1,//the old schema relied on the first eci to be root
+            }, function(data){
+                to_batch.push({
+                    type: "put",
+                    key: ["root_pico"],
+                    value: {
+                        id: data.value.pico_id,
+                        eci: data.value.id,
+                    }
+                });
+            }, function(err){
+                if(err) return callback(err);
+
+                ldb.batch(to_batch, callback);
+            });
         });
     },
 };

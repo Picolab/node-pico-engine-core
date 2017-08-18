@@ -2194,7 +2194,8 @@ test("PicoEngine - root pico creation", function(t){
 
             t.deepEquals(db.root_pico, {
                 id: "id0",
-                eci: "id1",
+                parent_id: null,
+                admin_eci: "id1",
             });
             t.deepEquals(db.pico, {"id0": {
                 id: "id0",

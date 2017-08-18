@@ -166,10 +166,7 @@ module.exports = function(opts){
                 db_ops.push({
                     type: "put",
                     key: ["root_pico"],
-                    value: {
-                        id: new_pico.id,
-                        eci: new_pico.admin_eci,
-                    },
+                    value: new_pico,
                 });
             }
 

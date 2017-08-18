@@ -82,7 +82,8 @@ test("DB - write and read", function(t){
             },
             "root_pico": {
                 id: "id0",
-                eci: "id1",
+                parent_id: null,
+                admin_eci: "id1",
             },
         });
 
@@ -216,17 +217,17 @@ test("DB - getRootPico", function(t){
         async.apply(db.newPico, {}),
         tstRoot(function(err, r_pico){
             t.notOk(err);
-            t.deepEquals(r_pico, {id: "id1", eci: "id2"});
+            t.deepEquals(r_pico, {id: "id1", parent_id: null, admin_eci: "id2"});
         }),
         async.apply(db.newPico, {parent_id: "id1"}),
         tstRoot(function(err, r_pico){
             t.notOk(err);
-            t.deepEquals(r_pico, {id: "id1", eci: "id2"});
+            t.deepEquals(r_pico, {id: "id1", parent_id: null, admin_eci: "id2"});
         }),
         async.apply(db.newPico, {parent_id: null}),
         tstRoot(function(err, r_pico){
             t.notOk(err);
-            t.deepEquals(r_pico, {id: "id5", eci: "id6"});
+            t.deepEquals(r_pico, {id: "id5", parent_id: null, admin_eci: "id6"});
         }),
     ], t.end);
 });

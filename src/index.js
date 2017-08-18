@@ -598,7 +598,7 @@ module.exports = function(conf){
                         if(err) return next(err);
                         db.newChannel({
                             pico_id: pico.id,
-                            name: "root",
+                            name: "admin",
                             type: "secret",
                         }, function(err, chan){
                             if(err) return next(err);

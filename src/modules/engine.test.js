@@ -379,12 +379,12 @@ testPE("engine:newChannel, engine:listChannels, engine:removeChannel", function 
     var listChannels = yield pe.modules.get({}, "engine", "listChannels");
 
     t.deepEquals(yield listChannels({}, ["id0"]), [
-        {id: "id1", pico_id: "id0", name: "root", type: "secret"},
+        {id: "id1", pico_id: "id0", name: "admin", type: "secret"},
     ]);
 
     t.deepEquals(yield newChannel({}, ["id0"]), {id: "id2", pico_id: "id0", name: void 0, type: void 0});
     t.deepEquals(yield listChannels({}, ["id0"]), [
-        {id: "id1", pico_id: "id0", name: "root", type: "secret"},
+        {id: "id1", pico_id: "id0", name: "admin", type: "secret"},
         {id: "id2", pico_id: "id0"},
     ]);
 

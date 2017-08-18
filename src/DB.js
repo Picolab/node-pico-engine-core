@@ -142,28 +142,27 @@ module.exports = function(opts){
                     : null,
             };
 
-            var db_ops = [
-                {
-                    type: "put",
-                    key: ["pico", new_pico.id],
-                    value: new_pico,
-                },
-            ];
+            var c = newChannel_base({
+                pico_id: new_pico.id,
+                name: "admin",
+                type: "secret",
+            });
+            new_pico.admin_eci = c.channel.id;
+
+            var db_ops = c.db_ops;
+
+            db_ops.push({
+                type: "put",
+                key: ["pico", new_pico.id],
+                value: new_pico,
+            });
             if(new_pico.parent_id){
                 db_ops.push({
                     type: "put",
                     key: ["pico-children", new_pico.parent_id, new_pico.id],
                     value: true,
                 });
-            }
-            if( ! new_pico.parent_id){
-                var c = newChannel_base({
-                    pico_id: new_pico.id,
-                    name: "admin",
-                    type: "secret",
-                });
-                new_pico.admin_eci = c.channel.id;
-                db_ops = db_ops.concat(c.db_ops);
+            }else{
                 db_ops.push({
                     type: "put",
                     key: ["root_pico"],

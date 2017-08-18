@@ -641,8 +641,8 @@ test("PicoEngine - io.picolabs.engine ruleset", function(t){
             function(done){
                 pe.dbDump(function(err, data){
                     if(err)return done(err);
-                    t.deepEquals(data.channel.id3, {
-                        id: "id3",
+                    t.deepEquals(data.channel.id4, {
+                        id: "id4",
                         name: "krl created chan",
                         pico_id: "id2",
                         type: "some type?",
@@ -2053,7 +2053,6 @@ test("PicoEngine - (re)registering ruleset shouldn't mess up state", function(t)
         });
         async.series([
             async.apply(pe.newPico, {}),
-            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),
             async.apply(pe.registerRuleset, krl_0, {}),
             async.apply(pe.installRuleset, "id0", "foo.rid"),
             signal("foo", "all"),

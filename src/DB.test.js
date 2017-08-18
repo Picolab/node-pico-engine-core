@@ -47,7 +47,13 @@ test("DB - write and read", function(t){
                     pico_id: "id0",
                     id: "id2",
                     name: "two",
-                    type: "t"
+                    type: "t",
+                },
+                id4: {
+                    pico_id: "id3",
+                    id: "id4",
+                    name: "admin",
+                    type: "secret",
                 },
             },
             pico: {
@@ -59,6 +65,7 @@ test("DB - write and read", function(t){
                 "id3": {
                     id: "id3",
                     parent_id: "id0",
+                    admin_eci: "id4",
                 },
             },
             "pico-ruleset": {"id0": {"rs0": {on: true}}},
@@ -68,6 +75,9 @@ test("DB - write and read", function(t){
                 "id0": {
                     "id1": true,
                     "id2": true,
+                },
+                "id3": {
+                    "id4": true,
                 },
             },
             "root_pico": {
@@ -216,7 +226,7 @@ test("DB - getRootPico", function(t){
         async.apply(db.newPico, {parent_id: null}),
         tstRoot(function(err, r_pico){
             t.notOk(err);
-            t.deepEquals(r_pico, {id: "id4", eci: "id5"});
+            t.deepEquals(r_pico, {id: "id5", eci: "id6"});
         }),
     ], t.end);
 });
@@ -675,32 +685,32 @@ test("DB - parent/child", function(t){
 
     async.series([
         async.apply(db.newPico, {}),// id0 and channel id1
-        async.apply(db.newPico, {parent_id: "id0"}),// id2
-        async.apply(db.newPico, {parent_id: "id0"}),// id3
-        async.apply(db.newPico, {parent_id: "id0"}),// id4
+        async.apply(db.newPico, {parent_id: "id0"}),// id2 + id3
+        async.apply(db.newPico, {parent_id: "id0"}),// id4 + id5
+        async.apply(db.newPico, {parent_id: "id0"}),// id6 + id7
 
-        async.apply(db.newPico, {parent_id: "id4"}),// id5
-        async.apply(db.newPico, {parent_id: "id4"}),// id6
+        async.apply(db.newPico, {parent_id: "id6"}),// id8 + id9
+        async.apply(db.newPico, {parent_id: "id6"}),// id10 + id11
 
         assertParent("id0", null),
         assertParent("id2", "id0"),
-        assertParent("id3", "id0"),
         assertParent("id4", "id0"),
-        assertParent("id5", "id4"),
-        assertParent("id6", "id4"),
+        assertParent("id6", "id0"),
+        assertParent("id8", "id6"),
+        assertParent("id10", "id6"),
 
-        assertChildren("id0", ["id2", "id3", "id4"]),
+        assertChildren("id0", ["id2", "id4", "id6"]),
         assertChildren("id2", []),
-        assertChildren("id3", []),
-        assertChildren("id4", ["id5", "id6"]),
-        assertChildren("id5", []),
-        assertChildren("id6", []),
+        assertChildren("id4", []),
+        assertChildren("id6", ["id10", "id8"]),
+        assertChildren("id8", []),
+        assertChildren("id10", []),
+
+        async.apply(db.removePico, "id8"),
+        assertChildren("id6", ["id10"]),
 
         async.apply(db.removePico, "id6"),
-        assertChildren("id4", ["id5"]),
-
-        async.apply(db.removePico, "id4"),
-        assertChildren("id4", []),
+        assertChildren("id6", []),
 
     ], t.end);
 });

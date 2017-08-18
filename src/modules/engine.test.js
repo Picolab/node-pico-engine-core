@@ -287,6 +287,7 @@ testPE("engine:newPico", function * (t, pe){
     t.deepEquals(pico2, {
         id: "id2",
         parent_id: "id0",
+        admin_eci: "id3",
     });
 
     //default to ctx.pico_id
@@ -294,8 +295,9 @@ testPE("engine:newPico", function * (t, pe){
         pico_id: "id2",//called by pico2
     }, "newPico", {});
     t.deepEquals(pico3, {
-        id: "id3",
+        id: "id4",
         parent_id: "id2",
+        admin_eci: "id5",
     });
 
     //no parent_id
@@ -321,25 +323,25 @@ testPE("engine:getParent, engine:listChildren, engine:removePico", function * (t
     var listChildren = yield pe.modules.get({}, "engine", "listChildren");
 
     yield newPico("id0");// id2
-    yield newPico("id0");// id3
-    yield newPico("id2");// id4
+    yield newPico("id0");// id4
+    yield newPico("id2");// id6
 
     t.equals(yield getParent({}, ["id0"]), null);
     t.equals(yield getParent({}, ["id2"]), "id0");
-    t.equals(yield getParent({}, ["id3"]), "id0");
-    t.equals(yield getParent({}, ["id4"]), "id2");
+    t.equals(yield getParent({}, ["id4"]), "id0");
+    t.equals(yield getParent({}, ["id6"]), "id2");
 
-    t.deepEquals(yield listChildren({}, ["id0"]), ["id2", "id3"]);
-    t.deepEquals(yield listChildren({}, ["id2"]), ["id4"]);
-    t.deepEquals(yield listChildren({}, ["id3"]), []);
+    t.deepEquals(yield listChildren({}, ["id0"]), ["id2", "id4"]);
+    t.deepEquals(yield listChildren({}, ["id2"]), ["id6"]);
     t.deepEquals(yield listChildren({}, ["id4"]), []);
+    t.deepEquals(yield listChildren({}, ["id6"]), []);
 
     //fallback on ctx.pico_id
-    t.equals(yield getParent({pico_id: "id4"}, []), "id2");
-    t.deepEquals(yield listChildren({pico_id: "id2"}, []), ["id4"]);
+    t.equals(yield getParent({pico_id: "id6"}, []), "id2");
+    t.deepEquals(yield listChildren({pico_id: "id2"}, []), ["id6"]);
 
 
-    t.equals(yield removePico({}, ["id4"]), void 0);
+    t.equals(yield removePico({}, ["id6"]), void 0);
     t.deepEquals(yield listChildren({}, ["id2"]), []);
 
     //report error on invalid pico_id

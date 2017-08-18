@@ -40,6 +40,33 @@ module.exports = function(opts){
         ldb.del(["migration-log", version + ""], callback);
     };
 
+
+    var newChannel_base = function(opts){
+        var channel = {
+            id: newID(),
+            pico_id: opts.pico_id,
+            name: opts.name,
+            type: opts.type
+        };
+        var db_ops = [
+            {
+                type: "put",
+                key: ["channel", channel.id],
+                value: channel,
+            },
+            {
+                type: "put",
+                key: ["pico-eci-list", channel.pico_id, channel.id],
+                value: true,
+            }
+        ];
+        return {
+            channel: channel,
+            db_ops: db_ops,
+        };
+    };
+
+
     return {
         toObj: function(callback){
             var db_data = {};
@@ -110,6 +137,7 @@ module.exports = function(opts){
 
 
         newPico: function(opts, callback){
+
             var new_pico = {
                 id: newID(),
                 parent_id: _.isString(opts.parent_id) && opts.parent_id.length > 0
@@ -131,6 +159,16 @@ module.exports = function(opts){
                     value: true,
                 });
             }
+            if( ! new_pico.parent_id){
+                var c = newChannel_base({
+                    pico_id: new_pico.id,
+                    name: "admin",
+                    type: "secret",
+                });
+                new_pico.admin_eci = c.channel.id;
+                ops = ops.concat(c.db_ops);
+            }
+
             ldb.batch(ops, function(err){
                 if(err) return callback(err);
                 callback(undefined, new_pico);
@@ -242,27 +280,10 @@ module.exports = function(opts){
         // channels
         //
         newChannel: function(opts, callback){
-            var new_channel = {
-                id: newID(),
-                pico_id: opts.pico_id,
-                name: opts.name,
-                type: opts.type
-            };
-            var ops = [
-                {
-                    type: "put",
-                    key: ["channel", new_channel.id],
-                    value: new_channel,
-                },
-                {
-                    type: "put",
-                    key: ["pico-eci-list", new_channel.pico_id, new_channel.id],
-                    value: true,
-                }
-            ];
-            ldb.batch(ops, function(err){
+            var c = newChannel_base(opts);
+            ldb.batch(c.db_ops, function(err){
                 if(err) return callback(err);
-                callback(undefined, new_channel);
+                callback(undefined, c.channel);
             });
         },
         listChannels: function(pico_id, callback){

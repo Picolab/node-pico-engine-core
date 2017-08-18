@@ -23,7 +23,6 @@ test("DB - write and read", function(t){
     async.series({
         start_db: async.apply(db.toObj),
         pico0: async.apply(db.newPico, {}),
-        chan1: async.apply(db.newChannel, {pico_id: "id0", name: "one", type: "t"}),
         rule0: async.apply(db.addRulesetToPico, "id0", "rs0"),
         chan2: async.apply(db.newChannel, {pico_id: "id0", name: "two", type: "t"}),
         pico1: async.apply(db.newPico, {parent_id: "id0"}),
@@ -41,8 +40,8 @@ test("DB - write and read", function(t){
                 id1: {
                     pico_id: "id0",
                     id: "id1",
-                    name: "one",
-                    type: "t",
+                    name: "admin",
+                    type: "secret",
                 },
                 id2: {
                     pico_id: "id0",
@@ -55,6 +54,7 @@ test("DB - write and read", function(t){
                 "id0": {
                     id: "id0",
                     parent_id: null,
+                    admin_eci: "id1",
                 },
                 "id3": {
                     id: "id3",
@@ -479,14 +479,12 @@ test("DB - getPicoIDByECI", function(t){
     var db = mkTestDB();
     async.series({
         pico0: async.apply(db.newPico, {}),
-        pico1: async.apply(db.newPico, {}),
+        pico2: async.apply(db.newPico, {}),
 
-        c2_p0: async.apply(db.newChannel, {pico_id: "id0", name: "two", type: "t"}),
-        c3_p1: async.apply(db.newChannel, {pico_id: "id1", name: "three", type: "t"}),
         c4_p0: async.apply(db.newChannel, {pico_id: "id0", name: "four", type: "t"}),
-        c5_p1: async.apply(db.newChannel, {pico_id: "id1", name: "five", type: "t"}),
+        c5_p1: async.apply(db.newChannel, {pico_id: "id2", name: "five", type: "t"}),
 
-        get_c2: async.apply(db.getPicoIDByECI, "id2"),
+        get_c2: async.apply(db.getPicoIDByECI, "id1"),
         get_c3: async.apply(db.getPicoIDByECI, "id3"),
         get_c4: async.apply(db.getPicoIDByECI, "id4"),
         get_c5: async.apply(db.getPicoIDByECI, "id5"),
@@ -495,12 +493,13 @@ test("DB - getPicoIDByECI", function(t){
         if(err) return t.end(err);
 
         t.deepEquals(data.get_c2, "id0");
-        t.deepEquals(data.get_c3, "id1");
+        t.deepEquals(data.get_c3, "id2");
         t.deepEquals(data.get_c4, "id0");
-        t.deepEquals(data.get_c5, "id1");
+        t.deepEquals(data.get_c5, "id2");
 
         db.getPicoIDByECI("bad-id", function(err, id){
             t.ok(err);
+            t.ok((err && err.notFound) === true);
             t.notOk(id);
             t.end();
         });
@@ -511,34 +510,30 @@ test("DB - listChannels", function(t){
     var db = mkTestDB();
     async.series({
         pico0: async.apply(db.newPico, {}),
-        pico1: async.apply(db.newPico, {}),
+        pico2: async.apply(db.newPico, {}),
 
-        c2_p0: async.apply(db.newChannel, {pico_id: "id0", name: "two", type: "t2"}),
-        c3_p1: async.apply(db.newChannel, {pico_id: "id1", name: "three", type: "t3"}),
         c4_p0: async.apply(db.newChannel, {pico_id: "id0", name: "four", type: "t4"}),
-        c5_p1: async.apply(db.newChannel, {pico_id: "id1", name: "five", type: "t5"}),
+        c5_p1: async.apply(db.newChannel, {pico_id: "id2", name: "five", type: "t5"}),
 
         list0: async.apply(db.listChannels, "id0"),
-        list1: async.apply(db.listChannels, "id1"),
+        list2: async.apply(db.listChannels, "id2"),
         list404: async.apply(db.listChannels, "id404"),
 
     }, function(err, data){
         if(err) return t.end(err);
 
 
-        var c2 = {id: "id2", name: "two",   type: "t2", pico_id: "id0"};
-        var c3 = {id: "id3", name: "three", type: "t3", pico_id: "id1"};
+        var c1 = {id: "id1", name: "admin", type: "secret", pico_id: "id0"};
+        var c3 = {id: "id3", name: "admin", type: "secret", pico_id: "id2"};
         var c4 = {id: "id4", name: "four",  type: "t4", pico_id: "id0"};
-        var c5 = {id: "id5", name: "five",  type: "t5", pico_id: "id1"};
+        var c5 = {id: "id5", name: "five",  type: "t5", pico_id: "id2"};
 
 
-        t.deepEquals(data.c2_p0, c2);
-        t.deepEquals(data.c3_p1, c3);
         t.deepEquals(data.c4_p0, c4);
         t.deepEquals(data.c5_p1, c5);
 
-        t.deepEquals(data.list0, [c2, c4]);
-        t.deepEquals(data.list1, [c3, c5]);
+        t.deepEquals(data.list0, [c1, c4]);
+        t.deepEquals(data.list2, [c3, c5]);
         t.deepEquals(data.list404, []);
 
         t.end();
@@ -676,33 +671,33 @@ test("DB - parent/child", function(t){
 
 
     async.series([
-        async.apply(db.newPico, {}),// id0
-        async.apply(db.newPico, {parent_id: "id0"}),// id1
+        async.apply(db.newPico, {}),// id0 and channel id1
         async.apply(db.newPico, {parent_id: "id0"}),// id2
         async.apply(db.newPico, {parent_id: "id0"}),// id3
+        async.apply(db.newPico, {parent_id: "id0"}),// id4
 
-        async.apply(db.newPico, {parent_id: "id3"}),// id4
-        async.apply(db.newPico, {parent_id: "id3"}),// id5
+        async.apply(db.newPico, {parent_id: "id4"}),// id5
+        async.apply(db.newPico, {parent_id: "id4"}),// id6
 
         assertParent("id0", null),
-        assertParent("id1", "id0"),
         assertParent("id2", "id0"),
         assertParent("id3", "id0"),
-        assertParent("id4", "id3"),
-        assertParent("id5", "id3"),
+        assertParent("id4", "id0"),
+        assertParent("id5", "id4"),
+        assertParent("id6", "id4"),
 
-        assertChildren("id0", ["id1", "id2", "id3"]),
-        assertChildren("id1", []),
+        assertChildren("id0", ["id2", "id3", "id4"]),
         assertChildren("id2", []),
-        assertChildren("id3", ["id4", "id5"]),
-        assertChildren("id4", []),
-        assertChildren("id5", []),
-
-        async.apply(db.removePico, "id5"),
-        assertChildren("id3", ["id4"]),
-
-        async.apply(db.removePico, "id3"),
         assertChildren("id3", []),
+        assertChildren("id4", ["id5", "id6"]),
+        assertChildren("id5", []),
+        assertChildren("id6", []),
+
+        async.apply(db.removePico, "id6"),
+        assertChildren("id4", ["id5"]),
+
+        async.apply(db.removePico, "id4"),
+        assertChildren("id4", []),
 
     ], t.end);
 });

@@ -596,17 +596,10 @@ module.exports = function(conf){
                     }
                     db.newPico({}, function(err, pico){
                         if(err) return next(err);
-                        db.newChannel({
-                            pico_id: pico.id,
-                            name: "admin",
-                            type: "secret",
-                        }, function(err, chan){
-                            if(err) return next(err);
-                            db.putRootPico({
-                                id: pico.id,
-                                eci: chan.id,
-                            }, next);
-                        });
+                        db.putRootPico({
+                            id: pico.id,
+                            eci: pico.admin_eci,
+                        }, next);
                     });
                 });
             },

@@ -147,9 +147,9 @@ test("PicoEngine - io.picolabs.persistent", function(t){
         if(err)return t.end(err);
 
         //two picos with the same ruleset
-        var A_query = mkQueryTask(pe, "id2", "io.picolabs.persistent");
+        var A_query = mkQueryTask(pe, "id1", "io.picolabs.persistent");
         var B_query = mkQueryTask(pe, "id3", "io.picolabs.persistent");
-        var A_signal = mkSignalTask(pe, "id2");
+        var A_signal = mkSignalTask(pe, "id1");
         var B_signal = mkSignalTask(pe, "id3");
 
 
@@ -157,12 +157,10 @@ test("PicoEngine - io.picolabs.persistent", function(t){
         var appvar_path = ["appvars", "io.picolabs.persistent", "appvar"];
 
         testOutputs(t, [
-            async.apply(pe.newPico, {}),//id0 - pico A
-            async.apply(pe.newPico, {}),//id1 - pico B
-            async.apply(pe.newChannel, {pico_id: "id0", name: "one", type: "t"}),//id2
-            async.apply(pe.newChannel, {pico_id: "id1", name: "one", type: "t"}),//id3
+            async.apply(pe.newPico, {}),//id0 - pico A channel id1
+            async.apply(pe.newPico, {}),//id2 - pico B channel id3
             async.apply(pe.installRuleset, "id0", "io.picolabs.persistent"),
-            async.apply(pe.installRuleset, "id1", "io.picolabs.persistent"),
+            async.apply(pe.installRuleset, "id2", "io.picolabs.persistent"),
 
             //////////////////////////////////////////////////////////////////////////
             //if not set, the var should return undefined
@@ -1707,7 +1705,6 @@ test("PicoEngine - io.picolabs.schedule rulesets", function(t){
     });
     async.series([
         async.apply(db.newPico, {}),
-        async.apply(db.newChannel, {pico_id: "init0", name: "one", type: "t"}),
         async.apply(db.addRulesetToPico, "init0", "io.picolabs.schedule"),
         async.apply(db.scheduleEventRepeat, "10 * * * * *", {
             eci: "init1",
@@ -2203,6 +2200,7 @@ test("PicoEngine - root pico creation", function(t){
             t.deepEquals(db.pico, {"id0": {
                 id: "id0",
                 parent_id: null,
+                admin_eci: "id1",
             }});
             t.deepEquals(_.keys(db.channel), ["id1"]);
 

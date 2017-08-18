@@ -2010,9 +2010,7 @@ test("PicoEngine - io.picolabs.error rulesets", function(t){
 });
 
 test("PicoEngine - (re)registering ruleset shouldn't mess up state", function(t){
-    var pe = PicoEngine({
-        host: "https://test-host",
-        ___core_testing_mode: true,
+    mkTestPicoEngine({
         compileAndLoadRuleset: function(rs_info, callback){
             var js;
             try{
@@ -2025,17 +2023,7 @@ test("PicoEngine - (re)registering ruleset shouldn't mess up state", function(t)
             }
             callback(null, js);
         },
-        db: {
-            db: memdown,
-            newID: (function(){
-                var i = 0;
-                return function(){
-                    return "id" + i++;
-                };
-            }())
-        }
-    });
-    pe.start(function(err){
+    }, function(err, pe){
         if(err)return t.end(err);
 
         var krl_0 = "ruleset foo.rid {rule aa {select when foo all} rule bb {select when foo all}}";

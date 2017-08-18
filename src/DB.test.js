@@ -5,10 +5,9 @@ var async = require("async");
 var memdown = require("memdown");
 var migrations = require("./migrations");
 
-var mkTestDB = function(opts){
-    opts = opts || {};
+var mkTestDB = function(){
     return DB({
-        db: opts.ldb || memdown,
+        db: memdown,
         newID: (function(){
             var i = 0;
             return function(){

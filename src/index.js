@@ -315,7 +315,7 @@ module.exports = function(conf){
         if(event.eid === "none"){
             event.eid = cuid();
         }
-        event.timestamp = conf.allow_event_time_override && _.isDate(event_orig.timestamp)
+        event.timestamp = conf.___core_testing_mode && _.isDate(event_orig.timestamp)
             ? event_orig.timestamp
             : new Date();
 

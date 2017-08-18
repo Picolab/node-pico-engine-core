@@ -310,7 +310,7 @@ testPE("engine:newPico", function * (t, pe){
 });
 
 
-testPE("engine:getParent, engine:listChildren, engine:removePico", function * (t, pe){
+testPE("engine:getParent, engine:getAdminECI, engine:listChildren, engine:removePico", function * (t, pe){
 
     var newPico = function*(parent_id){
         return yield pe.modules.action({pico_id: parent_id}, "engine", "newPico", []);
@@ -320,6 +320,7 @@ testPE("engine:getParent, engine:listChildren, engine:removePico", function * (t
     };
 
     var getParent = yield pe.modules.get({}, "engine", "getParent");
+    var getAdminECI = yield pe.modules.get({}, "engine", "getAdminECI");
     var listChildren = yield pe.modules.get({}, "engine", "listChildren");
 
     yield newPico("id0");// id2
@@ -330,6 +331,11 @@ testPE("engine:getParent, engine:listChildren, engine:removePico", function * (t
     t.equals(yield getParent({}, ["id2"]), "id0");
     t.equals(yield getParent({}, ["id4"]), "id0");
     t.equals(yield getParent({}, ["id6"]), "id2");
+
+    t.equals(yield getAdminECI({}, ["id0"]), "id1");
+    t.equals(yield getAdminECI({}, ["id2"]), "id3");
+    t.equals(yield getAdminECI({}, ["id4"]), "id5");
+    t.equals(yield getAdminECI({}, ["id6"]), "id7");
 
     t.deepEquals(yield listChildren({}, ["id0"]), ["id2", "id4"]);
     t.deepEquals(yield listChildren({}, ["id2"]), ["id6"]);

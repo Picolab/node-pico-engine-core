@@ -120,6 +120,11 @@ module.exports = function(opts){
                 callback(err, (data && data.parent_id) || null);
             });
         },
+        getAdminECI: function(pico_id, callback){
+            ldb.get(["pico", pico_id], function(err, data){
+                callback(err, (data && data.admin_eci) || null);
+            });
+        },
         listChildren: function(pico_id, callback){
             var children = [];
             dbRange(ldb, {

@@ -213,6 +213,11 @@ test("DB - getRootPico", function(t){
             t.notOk(err);
             t.deepEquals(r_pico, {id: "id1", eci: "id2"});
         }),
+        async.apply(db.newPico, {parent_id: null}),
+        tstRoot(function(err, r_pico){
+            t.notOk(err);
+            t.deepEquals(r_pico, {id: "id4", eci: "id5"});
+        }),
     ], t.end);
 });
 

@@ -142,7 +142,7 @@ module.exports = function(opts){
                     : null,
             };
 
-            var ops = [
+            var db_ops = [
                 {
                     type: "put",
                     key: ["pico", new_pico.id],
@@ -150,7 +150,7 @@ module.exports = function(opts){
                 },
             ];
             if(new_pico.parent_id){
-                ops.push({
+                db_ops.push({
                     type: "put",
                     key: ["pico-children", new_pico.parent_id, new_pico.id],
                     value: true,
@@ -163,8 +163,8 @@ module.exports = function(opts){
                     type: "secret",
                 });
                 new_pico.admin_eci = c.channel.id;
-                ops = ops.concat(c.db_ops);
-                ops.push({
+                db_ops = db_ops.concat(c.db_ops);
+                db_ops.push({
                     type: "put",
                     key: ["root_pico"],
                     value: {
@@ -174,7 +174,7 @@ module.exports = function(opts){
                 });
             }
 
-            ldb.batch(ops, function(err){
+            ldb.batch(db_ops, function(err){
                 if(err) return callback(err);
                 callback(undefined, new_pico);
             });
@@ -182,7 +182,7 @@ module.exports = function(opts){
 
 
         removePico: function(id, callback){
-            var to_batch = [];
+            var db_ops = [];
 
             var keyRange = function(prefix, fn){
                 return async.apply(dbRange, ldb, {
@@ -193,36 +193,36 @@ module.exports = function(opts){
 
             async.series([
                 keyRange(["pico", id], function(key){
-                    to_batch.push({type: "del", key: key});
+                    db_ops.push({type: "del", key: key});
                 }),
                 keyRange(["pico-eci-list", id], function(key){
                     var eci = key[2];
-                    to_batch.push({type: "del", key: key});
-                    to_batch.push({type: "del", key: ["channel", eci]});
+                    db_ops.push({type: "del", key: key});
+                    db_ops.push({type: "del", key: ["channel", eci]});
                 }),
                 keyRange(["entvars", id], function(key){
-                    to_batch.push({type: "del", key: key});
+                    db_ops.push({type: "del", key: key});
                 }),
                 keyRange(["pico-ruleset", id], function(key){
-                    to_batch.push({type: "del", key: key});
-                    to_batch.push({type: "del", key: ["ruleset-pico", key[2], key[1]]});
+                    db_ops.push({type: "del", key: key});
+                    db_ops.push({type: "del", key: ["ruleset-pico", key[2], key[1]]});
                 }),
                 keyRange(["pico-children", id], function(key){
-                    to_batch.push({type: "del", key: key});
+                    db_ops.push({type: "del", key: key});
                 }),
                 function(next){
                     ldb.get(["pico", id], function(err, pico){
                         if(err) return next(err);
                         if(pico && pico.parent_id){
                             keyRange(["pico-children", pico.parent_id, id], function(key){
-                                to_batch.push({type: "del", key: key});
+                                db_ops.push({type: "del", key: key});
                             })(next);
                             return;
                         }
                         ldb.get(["root_pico"], function(err, data){
                             if(err) return next(err);
                             if(data.id === id){
-                                to_batch.push({type: "del", key: ["root_pico"]});
+                                db_ops.push({type: "del", key: ["root_pico"]});
                             }
                             next();
                         });
@@ -230,7 +230,7 @@ module.exports = function(opts){
                 },
             ], function(err){
                 if(err)return callback(err);
-                ldb.batch(to_batch, callback);
+                ldb.batch(db_ops, callback);
             });
         },
 
@@ -270,7 +270,7 @@ module.exports = function(opts){
             ], callback);
         },
         removeRulesetFromPico: function(pico_id, rid, callback){
-            var ops = [
+            var db_ops = [
                 {type: "del", key: ["pico-ruleset", pico_id, rid]},
                 {type: "del", key: ["ruleset-pico", rid, pico_id]},
             ];
@@ -278,10 +278,10 @@ module.exports = function(opts){
                 prefix: ["entvars", pico_id, rid],
                 values: false,
             }, function(key){
-                ops.push({type: "del", key: key});
+                db_ops.push({type: "del", key: key});
             }, function(err){
                 if(err) return callback(err);
-                ldb.batch(ops, callback);
+                ldb.batch(db_ops, callback);
             });
         },
 
@@ -315,11 +315,11 @@ module.exports = function(opts){
             ldb.get(["channel", eci], function(err, data){
                 if(err) return callback(err);
 
-                var ops = [
+                var db_ops = [
                     {type: "del", key: ["channel", eci]},
                     {type: "del", key: ["pico-eci-list", data.pico_id, eci]}
                 ];
-                ldb.batch(ops, callback);
+                ldb.batch(db_ops, callback);
             });
         },
 
@@ -456,7 +456,7 @@ module.exports = function(opts){
                 ? meta.url
                 : null;
 
-            var ops = [
+            var db_ops = [
                 {
                     //the source of truth for a ruleset version
                     type: "put",
@@ -477,13 +477,13 @@ module.exports = function(opts){
             ];
             if(url){
                 //index to lookup by url
-                ops.push({
+                db_ops.push({
                     type: "put",
                     key: ["rulesets", "url", url.toLowerCase().trim(), rid, hash],
                     value: true
                 });
             }
-            ldb.batch(ops, function(err){
+            ldb.batch(db_ops, function(err){
                 if(err) return callback(err);
                 callback(undefined, {
                     rid: rid,
@@ -696,15 +696,15 @@ module.exports = function(opts){
             ldb.get(["scheduled", id], function(err, info){
                 if(err) return callback(err);
 
-                var to_batch = [
+                var db_ops = [
                     {type: "del", key: ["scheduled", id]},
                 ];
                 if(_.has(info, "at")){
                     //also remove the `at` index
-                    to_batch.push({type: "del", key: ["scheduled_by_at", new Date(info.at), id]});
+                    db_ops.push({type: "del", key: ["scheduled_by_at", new Date(info.at), id]});
                 }
 
-                ldb.batch(to_batch, callback);
+                ldb.batch(db_ops, callback);
             });
         },
 

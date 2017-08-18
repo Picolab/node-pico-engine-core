@@ -594,13 +594,7 @@ module.exports = function(conf){
                     }else if(!err){
                         return next();
                     }
-                    db.newPico({}, function(err, pico){
-                        if(err) return next(err);
-                        db.putRootPico({
-                            id: pico.id,
-                            eci: pico.admin_eci,
-                        }, next);
-                    });
+                    db.newPico({}, next);
                 });
             },
             function(next){

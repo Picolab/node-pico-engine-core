@@ -70,6 +70,10 @@ test("DB - write and read", function(t){
                     "id2": true,
                 },
             },
+            "root_pico": {
+                id: "id0",
+                eci: "id1",
+            },
         });
 
         t.deepEquals(data.post_del_db, {});
@@ -201,19 +205,13 @@ test("DB - getRootPico", function(t){
         async.apply(db.newChannel, {pico_id: "foo", name: "bar", type: "baz"}),
         async.apply(db.newPico, {}),
         tstRoot(function(err, r_pico){
-            t.ok(err);
-            t.ok(err.notFound);
-            t.deepEquals(r_pico, void 0);
+            t.notOk(err);
+            t.deepEquals(r_pico, {id: "id1", eci: "id2"});
         }),
-        async.apply(db.putRootPico, {id: "1234", eci: "5678"}),
+        async.apply(db.newPico, {parent_id: "id1"}),
         tstRoot(function(err, r_pico){
             t.notOk(err);
-            t.deepEquals(r_pico, {id: "1234", eci: "5678"});
-        }),
-        async.apply(db.putRootPico, {id: "foo", eci: "bar"}),
-        tstRoot(function(err, r_pico){
-            t.notOk(err);
-            t.deepEquals(r_pico, {id: "foo", eci: "bar"});
+            t.deepEquals(r_pico, {id: "id1", eci: "id2"});
         }),
     ], t.end);
 });

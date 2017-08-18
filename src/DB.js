@@ -113,9 +113,6 @@ module.exports = function(opts){
         getRootPico: function(callback){
             ldb.get(["root_pico"], callback);
         },
-        putRootPico: function(data, callback){
-            ldb.put(["root_pico"], data, callback);
-        },
 
 
         getParent: function(pico_id, callback){
@@ -167,6 +164,14 @@ module.exports = function(opts){
                 });
                 new_pico.admin_eci = c.channel.id;
                 ops = ops.concat(c.db_ops);
+                ops.push({
+                    type: "put",
+                    key: ["root_pico"],
+                    value: {
+                        id: new_pico.id,
+                        eci: new_pico.admin_eci,
+                    },
+                });
             }
 
             ldb.batch(ops, function(err){
@@ -212,9 +217,15 @@ module.exports = function(opts){
                             keyRange(["pico-children", pico.parent_id, id], function(key){
                                 to_batch.push({type: "del", key: key});
                             })(next);
-                        }else{
-                            next();
+                            return;
                         }
+                        ldb.get(["root_pico"], function(err, data){
+                            if(err) return next(err);
+                            if(data.id === id){
+                                to_batch.push({type: "del", key: ["root_pico"]});
+                            }
+                            next();
+                        });
                     });
                 },
             ], function(err){

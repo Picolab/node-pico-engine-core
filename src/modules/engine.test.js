@@ -396,13 +396,16 @@ testPE("engine:newChannel, engine:listChannels, engine:removeChannel", function 
         {id: "id2", pico_id: "id0"},
     ]);
 
-    t.equals(yield removeChannel({}, ["id1"]), void 0);
-    t.deepEquals(yield listChannels({}, ["id0"]), [
-        {id: "id2", pico_id: "id0"},
-    ]);
+    try{
+        yield removeChannel({}, ["id1"]);
+        t.fail("should throw b/c removeChannel shouldn't remove the admin channel");
+    }catch(e){
+        t.equals(e + "", "Error: Cannot delete the pico's admin channel");
+    }
 
     t.equals(yield removeChannel({}, ["id2"]), void 0);
     t.deepEquals(yield listChannels({}, ["id0"]), [
+        {id: "id1", pico_id: "id0", name: "admin", type: "secret"},
     ]);
 
     //report error on invalid pico_id

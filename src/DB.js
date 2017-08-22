@@ -316,11 +316,18 @@ module.exports = function(opts){
             ldb.get(["channel", eci], function(err, data){
                 if(err) return callback(err);
 
-                var db_ops = [
-                    {type: "del", key: ["channel", eci]},
-                    {type: "del", key: ["pico-eci-list", data.pico_id, eci]}
-                ];
-                ldb.batch(db_ops, callback);
+                ldb.get(["pico", data.pico_id], function(err, pico){
+                    if(err) return callback(err);
+                    if(pico.admin_eci === eci){
+                        callback(new Error("Cannot delete the pico's admin channel"));
+                        return;
+                    }
+                    var db_ops = [
+                        {type: "del", key: ["channel", eci]},
+                        {type: "del", key: ["pico-eci-list", pico.id, eci]}
+                    ];
+                    ldb.batch(db_ops, callback);
+                });
             });
         },
 

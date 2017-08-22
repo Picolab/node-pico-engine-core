@@ -652,14 +652,14 @@ test("PicoEngine - io.picolabs.engine ruleset", function(t){
             },
             [
                 signal("engine", "removeChannel", {
-                    eci: "id3",
+                    eci: "id4",
                 }),
                 []
             ],
             function(done){
                 pe.dbDump(function(err, data){
                     if(err)return done(err);
-                    t.deepEquals(data.channel.id3, void 0, "channel has been removed");
+                    t.deepEquals(data.channel.id4, void 0, "channel has been removed");
                     done();
                 });
             },

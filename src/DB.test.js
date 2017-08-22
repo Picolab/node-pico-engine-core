@@ -747,3 +747,56 @@ test("DB - assertPicoID", function(t){
 
     ], t.end);
 });
+
+
+test("DB - removeChannel", function(t){
+    var db = mkTestDB();
+
+    var assertECIs = function(pico_id, expected_ecis){
+        return function(next){
+            db.listChannels(pico_id, function(err, chans){
+                if(err) return next(err);
+
+                var eci_list = _.map(chans, "id");
+                t.deepEquals(eci_list, expected_ecis, "assert the listChannels");
+                t.deepEquals(_.uniq(_.map(chans, "pico_id")), [pico_id], "assert listChannels all come from the same pico_id");
+
+                next();
+            });
+        };
+    };
+
+    var assertFailRemoveECI = function(eci){
+        return function(next){
+            db.removeChannel(eci, function(err){
+                t.equals(err + "", "Error: Cannot delete the pico's admin channel");
+                next();
+            });
+        };
+    };
+
+    async.series([
+
+        async.apply(db.newPico, {}),
+        assertECIs("id0", ["id1"]),
+
+        async.apply(db.newChannel, {pico_id: "id0", name: "two", type: "t"}),
+        assertECIs("id0", ["id1", "id2"]),
+
+
+        assertFailRemoveECI("id1"),
+        assertECIs("id0", ["id1", "id2"]),
+
+        async.apply(db.removeChannel, "id2"),
+        assertECIs("id0", ["id1"]),
+
+        assertFailRemoveECI("id1"),
+        assertECIs("id0", ["id1"]),
+
+        async.apply(db.newPico, {parent_id: "id0"}),
+        assertECIs("id3", ["id4"]),
+        assertFailRemoveECI("id4"),
+        assertECIs("id3", ["id4"]),
+
+    ], t.end);
+});

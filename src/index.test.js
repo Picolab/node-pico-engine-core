@@ -1696,12 +1696,8 @@ test("PicoEngine - io.picolabs.schedule rulesets", function(t){
     var memdb = memdown(cuid());
     var db = DB({
         db: function(){return memdb;},
-        newID: (function(){
-            var i = 0;
-            return function(){
-                return "init" + i++;
-            };
-        }()),
+        __use_sequential_ids_for_testing: true,
+        __sequential_id_prefix_for_testing: "init",
     });
     async.series([
         async.apply(db.newPico, {}),

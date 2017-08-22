@@ -19,7 +19,16 @@ module.exports = function(opts){
         valueEncoding: safeJsonCodec
     });
 
-    var newID = _.isFunction(opts.newID) ? opts.newID : cuid;
+    var newID = cuid;
+    if(opts.__use_sequential_ids_for_testing){
+        newID = (function(){
+            var prefix = opts.__sequential_id_prefix_for_testing || "id";
+            var i = 0;
+            return function(){
+                return prefix + i++;
+            };
+        }());
+    }
 
     var getMigrationLog = function(callback){
         var log = {};

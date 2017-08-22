@@ -34,12 +34,7 @@ module.exports = function(opts, callback){
         rootRIDs: opts.rootRIDs,
         db: {
             db: opts.ldb || memdown,
-            newID: (function(){
-                var i = 0;
-                return function(){
-                    return "id" + i++;
-                };
-            }())
+            __use_sequential_ids_for_testing: true,
         }
     });
     async.eachSeries(_.keys(test_rulesets), function(rid, next){

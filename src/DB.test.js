@@ -8,12 +8,7 @@ var migrations = require("./migrations");
 var mkTestDB = function(){
     return DB({
         db: memdown,
-        newID: (function(){
-            var i = 0;
-            return function(){
-                return "id" + i++;
-            };
-        }())
+        __use_sequential_ids_for_testing: true,
     });
 };
 

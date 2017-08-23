@@ -6,6 +6,7 @@ var ktypes = require("krl-stdlib/types");
 var dbRange = require("./dbRange");
 var levelup = require("levelup");
 var bytewise = require("bytewise");
+var sovrinDID = require("sovrin-did");
 var migrations = require("./migrations");
 var safeJsonCodec = require("level-json-coerce-null");
 var extractRulesetID = require("./extractRulesetID");
@@ -20,6 +21,7 @@ module.exports = function(opts){
     });
 
     var newID = cuid;
+    var genDID = sovrinDID.gen;
     if(opts.__use_sequential_ids_for_testing){
         newID = (function(){
             var prefix = opts.__sequential_id_prefix_for_testing || "id";
@@ -28,6 +30,17 @@ module.exports = function(opts){
                 return prefix + i++;
             };
         }());
+        genDID = function(){
+            var id = newID();
+            return {
+                did: id,
+                verifyKey: "verifyKey_" + id,
+                secret: {
+                    seed: "seed_" + id,
+                    signKey: "signKey_" + id,
+                },
+            };
+        };
     }
 
     var getMigrationLog = function(callback){
@@ -51,11 +64,13 @@ module.exports = function(opts){
 
 
     var newChannel_base = function(opts){
+        var did = genDID();
         var channel = {
-            id: newID(),
+            id: did.did,
             pico_id: opts.pico_id,
             name: opts.name,
-            type: opts.type
+            type: opts.type,
+            sovrin: did,
         };
         var db_ops = [
             {

@@ -646,6 +646,14 @@ test("PicoEngine - io.picolabs.engine ruleset", function(t){
                         name: "krl created chan",
                         pico_id: "id2",
                         type: "some type?",
+                        sovrin: {
+                            did: "id4",
+                            verifyKey: "verifyKey_id4",
+                            secret: {
+                                seed: "seed_id4",
+                                signKey: "signKey_id4"
+                            },
+                        },
                     }, "channel is there before");
                     done();
                 });

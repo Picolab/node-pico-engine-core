@@ -36,18 +36,42 @@ test("DB - write and read", function(t){
                     id: "id1",
                     name: "admin",
                     type: "secret",
+                    sovrin: {
+                        did: "id1",
+                        verifyKey: "verifyKey_id1",
+                        secret: {
+                            seed: "seed_id1",
+                            signKey: "signKey_id1",
+                        },
+                    },
                 },
                 id2: {
                     pico_id: "id0",
                     id: "id2",
                     name: "two",
                     type: "t",
+                    sovrin: {
+                        did: "id2",
+                        verifyKey: "verifyKey_id2",
+                        secret: {
+                            seed: "seed_id2",
+                            signKey: "signKey_id2",
+                        },
+                    },
                 },
                 id4: {
                     pico_id: "id3",
                     id: "id4",
                     name: "admin",
                     type: "secret",
+                    sovrin: {
+                        did: "id4",
+                        verifyKey: "verifyKey_id4",
+                        secret: {
+                            seed: "seed_id4",
+                            signKey: "signKey_id4",
+                        },
+                    },
                 },
             },
             pico: {
@@ -530,11 +554,27 @@ test("DB - listChannels", function(t){
     }, function(err, data){
         if(err) return t.end(err);
 
+        var mkChan = function(pico_id, eci, name, type){
+            return {
+                pico_id: pico_id,
+                id: eci,
+                name: name,
+                type: type,
+                sovrin: {
+                    did: eci,
+                    verifyKey: "verifyKey_" + eci,
+                    secret: {
+                        seed: "seed_" + eci,
+                        signKey: "signKey_" + eci,
+                    },
+                },
+            };
+        };
 
-        var c1 = {id: "id1", name: "admin", type: "secret", pico_id: "id0"};
-        var c3 = {id: "id3", name: "admin", type: "secret", pico_id: "id2"};
-        var c4 = {id: "id4", name: "four",  type: "t4", pico_id: "id0"};
-        var c5 = {id: "id5", name: "five",  type: "t5", pico_id: "id2"};
+        var c1 = mkChan("id0", "id1", "admin", "secret");
+        var c3 = mkChan("id2", "id3", "admin", "secret");
+        var c4 = mkChan("id0", "id4", "four", "t4");
+        var c5 = mkChan("id2", "id5", "five", "t5");
 
 
         t.deepEquals(data.c4_p0, c4);

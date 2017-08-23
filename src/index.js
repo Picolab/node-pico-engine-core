@@ -552,7 +552,12 @@ module.exports = function(conf){
         signalEvent: core.signalEvent,
         runQuery: core.runQuery,
 
-        getRootPico: db.getRootPico,
+        getRootECI: function(callback){
+            db.getRootPico(function(err, root_pico){
+                if(err) return callback(err);
+                callback(null, root_pico.admin_eci);
+            });
+        },
 
         /////////////////////
         // vvv deprecated vvv
@@ -572,8 +577,8 @@ module.exports = function(conf){
         removeEntVar: db.removeEntVar,
 
         dbDump: db.toObj,
-        /////////////////////
         // ^^^ deprecated ^^^
+        /////////////////////
     };
     if(conf.___core_testing_mode){
         pe.newPico = db.newPico;

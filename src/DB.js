@@ -758,7 +758,7 @@ module.exports = function(opts){
                         to_run.push(version);
                     }
                 });
-                to_run.sort();
+                to_run.sort();//must run in order
 
                 async.eachSeries(to_run, function(version, next){
                     var m = migrations[version];

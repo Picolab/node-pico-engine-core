@@ -115,6 +115,7 @@ module.exports = function(conf){
                     eid: ctx.event.eid,
                     domain: ctx.event.domain,
                     type: ctx.event.type,
+                    attrs: _.cloneDeep(ctx.event.attrs),
                 };
                 if(!info.eci){
                     info.eci = ctx.event.eci;

@@ -82,21 +82,17 @@ module.exports = function(conf){
             }));
         };
         ctx.KRLClosure = function(fn){
-            return function(ctx2, args){
-                return fn(pushCTXScope(ctx2), function(name, index){
-                    return getArg(args, name, index);
-                }, function(name, index){
-                    return hasArg(args, name, index);
-                });
-            };
+            return cocb.wrap(function*(ctx2, args){
+                var gArg = _.partial(getArg, args);
+                var hArg = _.partial(hasArg, args);
+                return yield fn(pushCTXScope(ctx2), gArg, hArg);
+            });
         };
         ctx.defaction = function(ctx, name, fn){
             var actionFn = cocb.wrap(function*(ctx2, args){
-                return yield fn(pushCTXScope(ctx2), function(name, index){
-                    return getArg(args, name, index);
-                }, function(name, index){
-                    return hasArg(args, name, index);
-                }, runAction);
+                var gArg = _.partial(getArg, args);
+                var hArg = _.partial(hasArg, args);
+                return yield fn(pushCTXScope(ctx2), gArg, hArg, runAction);
             });
             actionFn.is_an_action = true;
             return ctx.scope.set(name, actionFn);

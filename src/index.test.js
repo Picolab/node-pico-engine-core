@@ -2114,6 +2114,13 @@ test("PicoEngine - io.picolabs.test-error-messages", function(t){
                 name: "somethingNotDefined",
                 args: {obj: "Bob"}
             }, "Error: Shared, but not defined: somethingNotDefined", true),
+
+            qError({
+                eci: "id1",
+                rid: "io.picolabs.test-error-messages",
+                name: "infiniteRecursion",
+            }, "RangeError: Maximum call stack size exceeded", false),
+
         ], t.end);
     });
 });

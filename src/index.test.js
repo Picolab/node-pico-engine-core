@@ -684,6 +684,7 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
         if(err)return t.end(err);
 
         var query = mkQueryTask(pe, "id1", "io.picolabs.module-defined");
+        var queryUsed = mkQueryTask(pe, "id1", "io.picolabs.module-used");
         var signal = mkSignalTask(pe, "id1");
 
         testOutputs(t, [
@@ -777,6 +778,8 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
                     privateFn: "privateFn = name: Bob memo: [\"foo\" by Bob]"
                 }}]
             ],
+            [queryUsed("getEntVal"), {name: "Bob"}],
+
             [
                 signal("module_used", "conf_getInfoAction"),
                 [{name: "getInfoAction", options: {
@@ -785,6 +788,7 @@ test("PicoEngine - io.picolabs.module-used ruleset", function(t){
                     privateFn: "privateFn = name: Jim memo: [\"foo\" by Bob]"
                 }}]
             ],
+            [queryUsed("getEntVal"), {name: "Jim"}],
 
 
             //Test unregisterRuleset checks

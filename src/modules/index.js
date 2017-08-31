@@ -91,7 +91,10 @@ module.exports = function(core){
 
                 throw new Error("Not an action `" + domain + ":" + id + "`");
             }
-            return yield modules[domain].actions[id](ctx, args);
+            return [//actions have multiple returns
+                //built in modules return only one value
+                yield modules[domain].actions[id](ctx, args),
+            ];
         }),
     };
 };

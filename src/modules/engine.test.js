@@ -278,7 +278,7 @@ testPE("engine:listInstalledRIDs", function * (t, pe){
 
 testPE("engine:newPico", function * (t, pe){
     var action = function*(ctx, name, args){
-        return yield pe.modules.action(ctx, "engine", name, args);
+        return _.head(yield pe.modules.action(ctx, "engine", name, args));
     };
 
     var pico2 = yield action({}, "newPico", {
@@ -313,10 +313,10 @@ testPE("engine:newPico", function * (t, pe){
 testPE("engine:getParent, engine:getAdminECI, engine:listChildren, engine:removePico", function * (t, pe){
 
     var newPico = function*(parent_id){
-        return yield pe.modules.action({pico_id: parent_id}, "engine", "newPico", []);
+        return _.head(yield pe.modules.action({pico_id: parent_id}, "engine", "newPico", []));
     };
     var removePico = function*(ctx, args){
-        return yield pe.modules.action(ctx, "engine", "removePico", args);
+        return _.head(yield pe.modules.action(ctx, "engine", "removePico", args));
     };
 
     var getParent = yield pe.modules.get({}, "engine", "getParent");
@@ -379,10 +379,10 @@ testPE("engine:getParent, engine:getAdminECI, engine:listChildren, engine:remove
 testPE("engine:newChannel, engine:listChannels, engine:removeChannel", function * (t, pe){
 
     var newChannel = function*(ctx, args){
-        return yield pe.modules.action(ctx, "engine", "newChannel", args);
+        return _.head(yield pe.modules.action(ctx, "engine", "newChannel", args));
     };
     var removeChannel = function*(ctx, args){
-        return yield pe.modules.action(ctx, "engine", "removeChannel", args);
+        return _.head(yield pe.modules.action(ctx, "engine", "removeChannel", args));
     };
     var listChannels = yield pe.modules.get({}, "engine", "listChannels");
 
@@ -443,10 +443,10 @@ testPE("engine:newChannel, engine:listChannels, engine:removeChannel", function 
 testPE("engine:installRuleset, engine:listInstalledRIDs, engine:uninstallRuleset", function * (t, pe){
 
     var installRS = function*(ctx, args){
-        return yield pe.modules.action(ctx, "engine", "installRuleset", args);
+        return _.head(yield pe.modules.action(ctx, "engine", "installRuleset", args));
     };
     var uninstallRID = function*(ctx, args){
-        return yield pe.modules.action(ctx, "engine", "uninstallRuleset", args);
+        return _.head(yield pe.modules.action(ctx, "engine", "uninstallRuleset", args));
     };
     var listRIDs = yield pe.modules.get({}, "engine", "listInstalledRIDs");
 

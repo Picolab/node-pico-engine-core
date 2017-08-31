@@ -563,10 +563,6 @@ test("DB - listChannels", function(t){
                 sovrin: {
                     did: eci,
                     verifyKey: "verifyKey_" + eci,
-                    secret: {
-                        seed: "seed_" + eci,
-                        signKey: "signKey_" + eci,
-                    },
                 },
             };
         };

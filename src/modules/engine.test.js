@@ -395,10 +395,6 @@ testPE("engine:newChannel, engine:listChannels, engine:removeChannel", function 
             sovrin: {
                 did: eci,
                 verifyKey: "verifyKey_" + eci,
-                secret: {
-                    seed: "seed_" + eci,
-                    signKey: "signKey_" + eci,
-                },
             },
         };
     };

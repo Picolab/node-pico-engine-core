@@ -12,6 +12,13 @@ var safeJsonCodec = require("level-json-coerce-null");
 var extractRulesetID = require("./extractRulesetID");
 
 
+var omitChannelSecret = function(channel){
+    return _.assign({}, channel, {
+        sovrin: _.omit(channel.sovrin, "secret"),
+    });
+};
+
+
 module.exports = function(opts){
 
     var ldb = levelup(opts.location, {
@@ -319,7 +326,7 @@ module.exports = function(opts){
             var c = newChannel_base(opts);
             ldb.batch(c.db_ops, function(err){
                 if(err) return callback(err);
-                callback(undefined, c.channel);
+                callback(null, omitChannelSecret(c.channel));
             });
         },
         listChannels: function(pico_id, callback){
@@ -332,7 +339,10 @@ module.exports = function(opts){
             }, function(err){
                 if(err) return callback(err);
                 async.map(eci_list, function(eci, next){
-                    ldb.get(["channel", eci], next);
+                    ldb.get(["channel", eci], function(err, channel){
+                        if(err) return next(err);
+                        next(null, omitChannelSecret(channel));
+                    });
                 }, callback);
             });
         },

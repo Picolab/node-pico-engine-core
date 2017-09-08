@@ -225,13 +225,10 @@ module.exports = function(conf){
     });
 
     var initializeAndEngageRuleset = function(rs, callback){
-        cocb.run(initializeRulest(rs), function(err){
-            if(err) return callback(err);
-
+        initializeRulest(rs).then(function(){
             core.rsreg.put(rs);
-
             callback();
-        });
+        }, callback);
     };
 
     var getRulesetForRID = function(rid, callback){

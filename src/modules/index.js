@@ -38,14 +38,6 @@ module.exports = function(core, third_party_modules){
 
     return {
         get: cocb.toYieldable(function(ctx, domain, id, callback){
-            if(_.has(modules, [domain, "def", id])){
-                callback(null, modules[domain].def[id]);
-                return;
-            }
-            if(_.has(modules, [domain, "get"])){
-                modules[domain].get(ctx, id, callback);
-                return;
-            }
             var umod = userModuleLookup(ctx, domain, id);
             if(umod.has_it){
                 callback(null, umod.value);
@@ -55,20 +47,28 @@ module.exports = function(core, third_party_modules){
                 callback(null, third_party_modules[domain].functions[id]);
                 return;
             }
+            if(_.has(modules, [domain, "def", id])){
+                callback(null, modules[domain].def[id]);
+                return;
+            }
+            if(_.has(modules, [domain, "get"])){
+                modules[domain].get(ctx, id, callback);
+                return;
+            }
             callback(new Error("Not defined `" + domain + ":" + id + "`"));
         }),
 
 
         set: cocb.toYieldable(function(ctx, domain, id, value, callback){
-            if(_.has(modules, domain)){
-                if(_.has(modules[domain], "set")){
-                    modules[domain].set(ctx, id, value, callback);
-                    return;
-                }
+            if(!_.has(modules, domain)){
+                callback(new Error("Module not defined `" + domain + ":" + id + "`"));
+                return;
+            }
+            if(!_.has(modules[domain], "set")){
                 callback(new Error("Cannot assign to `" + domain + ":*`"));
                 return;
             }
-            callback(new Error("Not defined `" + domain + ":" + id + "`"));
+            modules[domain].set(ctx, id, value, callback);
         }),
 
 
@@ -86,22 +86,27 @@ module.exports = function(core, third_party_modules){
 
 
         action: cocb.wrap(function*(ctx, domain, id, args){
+
+            var umod = userModuleLookup(ctx, domain, id);
+            if(umod.has_it && ktypes.isAction(umod.value)){
+                return yield umod.value(ctx, args);
+            }
+
             if(_.has(third_party_modules, [domain, "actions", id])){
-                return [yield third_party_modules[domain].actions[id](ctx, args)];
+                return [//actions have multiple returns
+                    //3rd party modules return only one value
+                    yield third_party_modules[domain].actions[id](ctx, args),
+                ];
             }
-            if(!_.has(modules, [domain, "actions", id])){
 
-                var umod = userModuleLookup(ctx, domain, id);
-                if(umod.has_it && ktypes.isAction(umod.value)){
-                    return yield umod.value(ctx, args);
-                }
-
-                throw new Error("Not an action `" + domain + ":" + id + "`");
+            if(_.has(modules, [domain, "actions", id])){
+                return [//actions have multiple returns
+                    //built in modules return only one value
+                    yield modules[domain].actions[id](ctx, args),
+                ];
             }
-            return [//actions have multiple returns
-                //built in modules return only one value
-                yield modules[domain].actions[id](ctx, args),
-            ];
+
+            throw new Error("Not an action `" + domain + ":" + id + "`");
         }),
     };
 };

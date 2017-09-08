@@ -2221,3 +2221,28 @@ test("PicoEngine - root pico creation", function(t){
         });
     });
 });
+
+
+test("PicoEngine - js-module", function(t){
+    mkTestPicoEngine({
+        rootRIDs: [
+            "io.picolabs.js-module",
+        ],
+    }, function(err, pe){
+        if(err)return t.end(err);
+
+        var query = mkQueryTask(pe, "id1", "io.picolabs.js-module");
+        var signal = mkSignalTask(pe, "id1");
+
+        testOutputs(t, [
+            [
+                query("qFn", {a: 3}),
+                6
+            ],
+            [
+                signal("js_module", "action", {}),
+                []
+            ],
+        ], t.end);
+    });
+});

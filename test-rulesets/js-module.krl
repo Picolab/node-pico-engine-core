@@ -10,6 +10,10 @@ ruleset io.picolabs.js-module {
     rule action {
         select when js_module action
 
-        myJsModule:act(100, b = 30);
+        every {
+            myJsModule:act(100, b = 30) setting(val);
+
+            send_directive("resp", {"val": val});
+        }
     }
 }

@@ -5,6 +5,7 @@ var test = require("tape");
 var http = require("http");
 var async = require("async");
 var memdown = require("memdown");
+var mkKRLfn = require("./mkKRLfn");
 var compiler = require("krl-compiler");
 var PicoEngine = require("./");
 var mkTestPicoEngine = require("./mkTestPicoEngine");
@@ -2228,6 +2229,20 @@ test("PicoEngine - js-module", function(t){
         rootRIDs: [
             "io.picolabs.js-module",
         ],
+        modules: {
+            myJsModule: {
+                functions: {
+                    fun0: mkKRLfn(["a", "b"], function(args, ctx, callback){
+                        callback(null, args.a * args.b);
+                    }),
+                },
+                actions: {
+                    act: mkKRLfn(["a", "b"], function(args, ctx, callback){
+                        callback(null, args.b / args.a);
+                    }),
+                },
+            },
+        },
     }, function(err, pe){
         if(err)return t.end(err);
 
@@ -2241,7 +2256,7 @@ test("PicoEngine - js-module", function(t){
             ],
             [
                 signal("js_module", "action", {}),
-                []
+                [{name: "resp", options: {val: 0.3}}]
             ],
         ], t.end);
     });

@@ -15,7 +15,7 @@ var sub_modules = {
     random: require("./random"),
 };
 
-module.exports = function(core){
+module.exports = function(core, third_party_modules){
 
     var modules = _.mapValues(sub_modules, function(m){
         return m(core);
@@ -51,6 +51,10 @@ module.exports = function(core){
                 callback(null, umod.value);
                 return;
             }
+            if(_.has(third_party_modules, [domain, "functions", id])){
+                callback(null, third_party_modules[domain].functions[id]);
+                return;
+            }
             callback(new Error("Not defined `" + domain + ":" + id + "`"));
         }),
 
@@ -82,6 +86,9 @@ module.exports = function(core){
 
 
         action: cocb.wrap(function*(ctx, domain, id, args){
+            if(_.has(third_party_modules, [domain, "actions", id])){
+                return [yield third_party_modules[domain].actions[id](ctx, args)];
+            }
             if(!_.has(modules, [domain, "actions", id])){
 
                 var umod = userModuleLookup(ctx, domain, id);

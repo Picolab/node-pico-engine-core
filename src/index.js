@@ -56,7 +56,7 @@ module.exports = function(conf){
     };
 
     var emitter = new EventEmitter();
-    var modules = Modules(core);
+    var modules = Modules(core, conf.modules);
 
     var mkCTX = function(ctx){
         ctx.getMyKey = (function(rid){

@@ -33,7 +33,11 @@ module.exports = {
           yield runAction(ctx, "myJsModule", "act", {
             "0": 100,
             "b": 30
-          }, []);
+          }, ["val"]);
+          yield runAction(ctx, void 0, "send_directive", [
+            "resp",
+            { "val": ctx.scope.get("val") }
+          ], []);
         }
         if (fired)
           ctx.emit("debug", "fired");

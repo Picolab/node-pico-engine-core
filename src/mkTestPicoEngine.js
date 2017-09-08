@@ -35,7 +35,8 @@ module.exports = function(opts, callback){
         db: {
             db: opts.ldb || memdown,
             __use_sequential_ids_for_testing: true,
-        }
+        },
+        modules: opts.modules,
     });
     async.eachSeries(_.keys(test_rulesets), function(rid, next){
         //hack since compileAndLoadRuleset doesn't actually compile

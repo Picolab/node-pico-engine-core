@@ -2135,11 +2135,9 @@ test("PicoEngine - io.picolabs.test-error-messages", function(t){
     });
 });
 
-test("PicoEngine - startup ruleset dependency ordering", function(t){
-
+var mkPicoEngineFactoryWithKRLCompiler = function(){
     var memdb = memdown(cuid());//db to share between to engine instances
-
-    var mkPE = function(){
+    return function(){
         return PicoEngine({
             host: "https://test-host",
             ___core_testing_mode: true,
@@ -2160,6 +2158,11 @@ test("PicoEngine - startup ruleset dependency ordering", function(t){
             }
         });
     };
+};
+
+test("PicoEngine - startup ruleset dependency ordering", function(t){
+
+    var mkPE = mkPicoEngineFactoryWithKRLCompiler();
 
     //create a blank engine
     var pe = mkPE();
@@ -2179,7 +2182,7 @@ test("PicoEngine - startup ruleset dependency ordering", function(t){
 
         //now the engine shuts down, and starts up again
         pe = mkPE();
-        pe.start(function(err){
+        pe.start([], function(err){
             //if the dependencies aren't loaded in the correct order it will blow up
             if(err)return t.end(err);
             t.ok(true, "restarted successfully");
@@ -2270,5 +2273,21 @@ test("PicoEngine - js-module", function(t){
                 [{name: "resp", options: {val: 0.3}}]
             ],
         ], t.end);
+    });
+});
+
+
+test("PicoEngine - system ruleset dependency ordering", function(t){
+
+    var mkPE = mkPicoEngineFactoryWithKRLCompiler();
+
+    var pe = mkPE();
+    pe.start([
+        {src: "ruleset C {meta{use module D}}", meta: {url: "http://foo/C.krl"}},
+        {src: "ruleset D {}", meta: {url: "http://foo/D.krl"}},
+    ], function(err){
+        t.notOk(err, "if the dependencies aren't loaded in the correct order it will blow up");
+        t.ok(true, "started successfully");
+        t.end();
     });
 });

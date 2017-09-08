@@ -399,36 +399,56 @@ module.exports = function(conf){
         });
     };
 
-    var registerAllEnabledRulesets = function(callback){
-        db.listAllEnabledRIDs(function(err, rids){
-            if(err)return callback(err);
-            if(_.isEmpty(rids)){
-                callback();
-                return;
-            }
+    var registerAllEnabledRulesets = function(system_rulesets, callback){
+        var enabled_rids;
+        var rs_by_rid = {};
+        var resolver = new DependencyResolver();
 
-            var rs_by_rid = {};
-            var resolver = new DependencyResolver();
-
-            async.each(rids, function(rid, next){
-                getRulesetForRID(rid, function(err, rs){
-                    if(err){
-                        //TODO handle error rather than stop
-                        next(err);
-                        return;
-                    }
-                    rs_by_rid[rs.rid] = rs;
-                    resolver.add(rs.rid);
-                    _.each(rs.meta && rs.meta.use, function(use){
-                        if(use.kind === "module"){
-                            resolver.setDependency(rs.rid, use.rid);
-                        }
-                    });
-                    next(null, rs);
+        async.series([
+            function(nextStep){
+                db.listAllEnabledRIDs(function(err, rids){
+                    if(err) return nextStep(err);
+                    enabled_rids = rids;
+                    nextStep();
                 });
-            }, function(err){
-                if(err)return callback(err);
+            },
 
+
+            //TODO system_rulesets
+
+            //
+            // load Rulesets and track dependencies
+            //
+            function(nextStep){
+                async.each(enabled_rids, function(rid, next){
+                    getRulesetForRID(rid, function(err, rs){
+                        if(err){
+                            //TODO handle error rather than stop
+                            next(err);
+                            return;
+                        }
+                        rs_by_rid[rs.rid] = rs;
+                        resolver.add(rs.rid);
+                        _.each(rs.meta && rs.meta.use, function(use){
+                            if(use.kind === "module"){
+                                resolver.setDependency(rs.rid, use.rid);
+                            }
+                        });
+                        next(null, rs);
+                    });
+                }, nextStep);
+            },
+
+
+            //
+            // initialize Rulesets according to dependency order
+            //
+            function(nextStep){
+                if(_.isEmpty(rs_by_rid)){
+                    //resolver blows up if it's empty
+                    nextStep();
+                    return;
+                }
                 //order they need to be loaded in for dependencies to work
                 var rid_order = resolver.sort();
 
@@ -442,9 +462,9 @@ module.exports = function(conf){
                         }
                         next();
                     });
-                }, callback);
-            });
-        });
+                }, nextStep);
+            },
+        ], callback);
     };
 
     core.unregisterRuleset = function(rid, callback){
@@ -580,9 +600,12 @@ module.exports = function(conf){
         pe.modules = modules;
     }
 
-    pe.start = function(callback){
+    pe.start = function(system_rulesets, callback){
         async.series([
             db.checkAndRunMigrations,
+            function(next){
+                registerAllEnabledRulesets(system_rulesets, next);
+            },
             function(next){
                 if(_.isEmpty(rootRIDs)){
                     return next();
@@ -619,7 +642,6 @@ module.exports = function(conf){
                     });
                 });
             },
-            registerAllEnabledRulesets,
             resumeScheduler,
         ], callback);
     };

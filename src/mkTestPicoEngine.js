@@ -45,7 +45,7 @@ module.exports = function(opts, callback){
             url: test_rulesets[rid].url
         }, next);
     }, function(err){
-        pe.start(function(err){
+        pe.start([], function(err){
             callback(err, pe);
         });
     });

@@ -250,7 +250,7 @@ module.exports = function(conf){
         });
     };
 
-    core.registerRuleset = function(krl_src, meta_data, callback){
+    var storeCompileAndEnable = function(krl_src, meta_data, callback){
         db.storeRuleset(krl_src, meta_data, function(err, data){
             if(err) return callback(err);
             compileAndLoadRuleset({
@@ -260,16 +260,22 @@ module.exports = function(conf){
             }, function(err, rs){
                 if(err) return callback(err);
                 db.enableRuleset(data.hash, function(err){
-                    if(err) return callback(err);
-                    initializeAndEngageRuleset(rs, function(err){
-                        if(err){
-                            db.disableRuleset(rs.rid, _.noop);//undo enable if failed
-                        }
-                        callback(err, {
-                            rid: rs.rid,
-                            hash: data.hash
-                        });
-                    });
+                    callback(err, {rs: rs, hash: data.hash});
+                });
+            });
+        });
+    };
+
+    core.registerRuleset = function(krl_src, meta_data, callback){
+        storeCompileAndEnable(krl_src, meta_data, function(err, data){
+            if(err) return callback(err);
+            initializeAndEngageRuleset(data.rs, function(err){
+                if(err){
+                    db.disableRuleset(data.rs.rid, _.noop);//undo enable if failed
+                }
+                callback(err, {
+                    rid: data.rs.rid,
+                    hash: data.hash
                 });
             });
         });
@@ -400,27 +406,26 @@ module.exports = function(conf){
     };
 
     var registerAllEnabledRulesets = function(system_rulesets, callback){
-        var enabled_rids;
+
         var rs_by_rid = {};
         var resolver = new DependencyResolver();
 
         async.series([
+            //
+            // register system_rulesets
+            //
             function(nextStep){
-                db.listAllEnabledRIDs(function(err, rids){
-                    if(err) return nextStep(err);
-                    enabled_rids = rids;
-                    nextStep();
-                });
+                async.each(system_rulesets, function(system_ruleset, next){
+                    storeCompileAndEnable(system_ruleset.src, system_ruleset.meta, next);
+                }, nextStep);
             },
 
-
-            //TODO system_rulesets
 
             //
             // load Rulesets and track dependencies
             //
             function(nextStep){
-                async.each(enabled_rids, function(rid, next){
+                var onRID = function(rid, next){
                     getRulesetForRID(rid, function(err, rs){
                         if(err){
                             //TODO handle error rather than stop
@@ -436,7 +441,11 @@ module.exports = function(conf){
                         });
                         next(null, rs);
                     });
-                }, nextStep);
+                };
+                db.listAllEnabledRIDs(function(err, rids){
+                    if(err) return nextStep(err);
+                    async.each(rids, onRID, nextStep);
+                });
             },
 
 

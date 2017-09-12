@@ -1,5 +1,6 @@
 var _ = require("lodash");
 var DB = require("./DB");
+var cocb = require("co-callback");
 var cuid = require("cuid");
 var test = require("tape");
 var http = require("http");
@@ -2137,8 +2138,8 @@ test("PicoEngine - io.picolabs.test-error-messages", function(t){
 
 var mkPicoEngineFactoryWithKRLCompiler = function(){
     var memdb = memdown(cuid());//db to share between to engine instances
-    return function(){
-        return PicoEngine({
+    return function(opts){
+        return PicoEngine(_.assign({}, {
             host: "https://test-host",
             ___core_testing_mode: true,
             compileAndLoadRuleset: function(rs_info, callback){
@@ -2155,8 +2156,9 @@ var mkPicoEngineFactoryWithKRLCompiler = function(){
             },
             db: {
                 db: function(){return memdb;},
+                __use_sequential_ids_for_testing: true,
             }
-        });
+        }, opts));
     };
 };
 
@@ -2281,13 +2283,23 @@ test("PicoEngine - system ruleset dependency ordering", function(t){
 
     var mkPE = mkPicoEngineFactoryWithKRLCompiler();
 
-    var pe = mkPE();
+    var pe = mkPE({
+        rootRIDs: [
+            "C",
+        ],
+    });
     pe.start([
         {src: "ruleset C {meta{use module D}}", meta: {url: "http://foo/C.krl"}},
         {src: "ruleset D {}", meta: {url: "http://foo/D.krl"}},
     ], function(err){
         t.notOk(err, "if the dependencies aren't loaded in the correct order it will blow up");
         t.ok(true, "started successfully");
-        t.end();
+
+        cocb.run(function*(){
+            var listIns = yield pe.modules.get({}, "engine", "listInstalledRIDs");
+            var rids = yield listIns({pico_id: "id0"}, []);
+
+            t.deepEquals(rids, ["C"]);
+        }, t.end);
     });
 });

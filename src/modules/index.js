@@ -6,14 +6,15 @@ var mkKRLfn = require("../mkKRLfn");
 var sub_modules = {
     ent: require("./ent"),
     app: require("./app"),
-    event: require("./event"),
     engine: require("./engine"),
+    event: require("./event"),
     http: require("./http"),
     keys: require("./keys"),
+    math: require("./math"),
     meta: require("./meta"),
+    random: require("./random"),
     schedule: require("./schedule"),
     time: require("./time"),
-    random: require("./random"),
 };
 
 module.exports = function(core, third_party_modules){

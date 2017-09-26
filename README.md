@@ -1,5 +1,7 @@
 # pico-engine-core
 
+MOVED TO https://github.com/Picolab/pico-engine/tree/master/packages/pico-engine-core
+
 [![build status](https://secure.travis-ci.org/Picolab/node-pico-engine-core.svg)](https://travis-ci.org/Picolab/node-pico-engine-core)
 [![windows build status](https://ci.appveyor.com/api/projects/status/nf1at924iqiah106?svg=true)](https://ci.appveyor.com/project/farskipper/node-pico-engine-core)
 
